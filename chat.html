@@ -38,29 +38,10 @@
     margin: 0;
     letter-spacing: 0.02em;
   }
-  .agent-toggle {
-    display: flex;
-    gap: 6px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
-  }
-  .agent-toggle button {
-    border: none;
-    background: transparent;
+  .subtitle {
+    font-size: 11px;
     color: var(--text-dim);
-    font-size: 12px;
-    font-weight: 500;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.15s ease;
   }
-  .agent-toggle button.active.support { background: var(--support); color: #06121F; }
-  .agent-toggle button.active.inventory { background: var(--inventory); color: #06201B; }
-  .agent-toggle button.active.policy { background: var(--policy); color: #1F0633; }
-
   #log {
     flex: 1;
     overflow-y: auto;
@@ -75,6 +56,7 @@
     border-radius: 10px;
     font-size: 14px;
     line-height: 1.5;
+    white-space: pre-wrap;
   }
   .msg.user {
     align-self: flex-end;
@@ -97,6 +79,8 @@
   .msg.agent.support .tag { color: var(--support); }
   .msg.agent.inventory .tag { color: var(--inventory); }
   .msg.agent.policy .tag { color: var(--policy); }
+  .msg.agent.multi .tag { color: var(--accent); }
+  .msg.agent.none .tag { color: var(--text-dim); }
   .msg.system {
     align-self: center;
     color: var(--text-dim);
@@ -109,7 +93,6 @@
     border: 1px solid #5A2424;
     color: #FF8A8A;
   }
-
   footer {
     padding: 16px 20px;
     border-top: 1px solid var(--border);
@@ -153,94 +136,110 @@
 
 <header>
   <h1>E-COMMERCE AGENT CONSOLE</h1>
-  <div class="agent-toggle">
-    <button id="btn-support" class="active support" onclick="setAgent('support')">Support</button>
-    <button id="btn-inventory" class="inventory" onclick="setAgent('inventory')">Inventory</button>
-    <button id="btn-policy" class="policy" onclick="setAgent('policy')">Policy</button>
-  </div>
+  <div class="subtitle">Auto-routed by orchestrator — just ask</div>
 </header>
 
 <div id="log"></div>
 
 <footer>
-  <input id="input" type="text" placeholder="Ask about an order, refund, or stock..." onkeydown="if(event.key==='Enter') send()">
+  <input id="input" type="text" placeholder="Ask about an order, refund, stock, or policy..." onkeydown="if(event.key==='Enter') send()">
   <button id="send" onclick="send()">Send</button>
 </footer>
 
 <script>
-const API_BASE = "http://127.0.0.1:8000";
-let currentAgent = "support";
+  const API_BASE = "http://127.0.0.1:8000";
+  let conversationHistory = [];  // stores {role, content} pairs
 
-function setAgent(agent) {
-  currentAgent = agent;
-  document.getElementById("btn-support").classList.toggle("active", agent === "support");
-  document.getElementById("btn-inventory").classList.toggle("active", agent === "inventory");
-  document.getElementById("btn-policy").classList.toggle("active", agent === "policy");
-  addSystemMsg(`Switched to ${agent} agent`);
-}
+  function addMsg(text, role, agentType) {
+    const log = document.getElementById("log");
+    const div = document.createElement("div");
+    div.className = `msg ${role}` + (agentType ? ` ${agentType}` : "");
 
-function addMsg(text, role, agentType) {
-  const log = document.getElementById("log");
-  const div = document.createElement("div");
-  div.className = `msg ${role}` + (agentType ? ` ${agentType}` : "");
-  if (role === "agent") {
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.textContent = agentType;
-    div.appendChild(tag);
-    div.appendChild(document.createTextNode(text));
-  } else {
-    div.textContent = text;
+    if (role === "agent") {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = agentType;
+      div.appendChild(tag);
+      div.appendChild(document.createTextNode(text));
+    } else {
+      div.textContent = text;
+    }
+
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
   }
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-  return div;
-}
 
-function addSystemMsg(text) {
-  addMsg(text, "system");
-}
-
-async function send() {
-  const input = document.getElementById("input");
-  const sendBtn = document.getElementById("send");
-  const text = input.value.trim();
-  if (!text) return;
-
-  addMsg(text, "user");
-  input.value = "";
-  sendBtn.disabled = true;
-
-  const typingDiv = addMsg("", "agent", currentAgent);
-  typingDiv.innerHTML = `<span class="tag">${currentAgent}</span><span class="typing"><span></span><span></span><span></span></span>`;
-
-  try {
-    const res = await fetch(`${API_BASE}/${currentAgent}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
-    });
-
-    if (!res.ok) throw new Error(`Server returned ${res.status}`);
-
-    const data = await res.json();
-    typingDiv.innerHTML = "";
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.textContent = data.agent;
-    typingDiv.appendChild(tag);
-    typingDiv.appendChild(document.createTextNode(data.response));
-
-  } catch (err) {
-    typingDiv.remove();
-    addMsg(`Could not reach the agent server. Is it running? (${err.message})`, "error");
-  } finally {
-    sendBtn.disabled = false;
-    input.focus();
+  function addSystemMsg(text) {
+    addMsg(text, "system");
   }
-}
 
-addSystemMsg("Connected to E-commerce Agent API \u2014 ask the support, inventory, or policy agent a question");
+  // Turns ["support", "policy"] into a display label like "support + policy"
+  // and into a CSS-safe class. Falls back to "none" if nothing was routed.
+  function agentLabel(agentsUsed) {
+    if (!agentsUsed || agentsUsed.length === 0) return "none";
+    if (agentsUsed.length === 1) return agentsUsed[0];
+    return "multi";
+  }
+
+  function agentDisplayText(agentsUsed) {
+    if (!agentsUsed || agentsUsed.length === 0) return "assistant";
+    return agentsUsed.join(" + ");
+  }
+
+  async function send() {
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMsg(text, "user");
+    input.value = "";
+    sendBtn.disabled = true;
+
+    const typingDiv = addMsg("", "agent", "multi");
+    typingDiv.innerHTML = `<span class="tag">routing...</span><span class="typing"><span></span><span></span><span></span></span>`;
+
+    try {
+      const res = await fetch(`${API_BASE}/chat/customer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, history: conversationHistory })
+      });
+
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+
+      const data = await res.json();
+      const cssClass = agentLabel(data.agents_used);
+      const label = agentDisplayText(data.agents_used);
+
+      typingDiv.className = `msg agent ${cssClass}`;
+      typingDiv.innerHTML = "";
+
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = label;
+      typingDiv.appendChild(tag);
+      typingDiv.appendChild(document.createTextNode(data.reply));
+
+      // store this exchange in history
+      conversationHistory.push({ role: "user", content: text });
+      conversationHistory.push({ role: "assistant", content: data.reply });
+      // keep only last 10 messages (5 exchanges) to avoid token bloat
+      if (conversationHistory.length > 10) {
+        conversationHistory = conversationHistory.slice(-10);
+      }
+
+    } catch (err) {
+      typingDiv.remove();
+      addMsg(`Could not reach the agent server. Is it running? (${err.message})`, "error");
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  addSystemMsg("Connected to E-commerce Agent API — ask anything about orders, refunds, stock, or policies and it'll route automatically");
 </script>
 
 </body>
