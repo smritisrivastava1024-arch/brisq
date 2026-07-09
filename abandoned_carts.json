@@ -1,0 +1,26 @@
+[
+  {
+    "cart_id": "CART-101",
+    "customer_name": "Sarah",
+    "email": "sarah@example.com",
+    "phone": "+919999999999",
+    "items": ["Wireless Earbuds", "Power Bank"],
+    "cart_value": 4999,
+    "checkout_url": "https://example.com/checkout/cart-101",
+    "status": "pending",
+    "approved": false,
+    "sent": false
+  },
+  {
+    "cart_id": "CART-102",
+    "customer_name": "Amit",
+    "email": "amit@example.com",
+    "phone": "+918888888888",
+    "items": ["Gaming Mouse", "Mechanical Keyboard"],
+    "cart_value": 7499,
+    "checkout_url": "https://example.com/checkout/cart-102",
+    "status": "pending",
+    "approved": false,
+    "sent": false
+  }
+]
