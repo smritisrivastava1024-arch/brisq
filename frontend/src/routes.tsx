@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/owner/LoginPage';
 import { OwnerLayout } from './pages/owner/OwnerLayout';
 import { CustomerChatPage } from './pages/CustomerChatPage';
+import { ApprovalsPage } from './pages/owner/ApprovalsPage';
 
 // ---------------------------------------------------------------------------
 // Placeholder pages for owner sub-routes
@@ -44,7 +45,7 @@ export const router = createBrowserRouter([
         children: [
           // Default redirect: /owner → /owner/approvals
           { index: true, element: <Navigate to="approvals" replace /> },
-          { path: 'approvals',      element: <PlaceholderPage title="Approvals" /> },
+          { path: 'approvals',      element: <ApprovalsPage /> },
           { path: 'chat',           element: <PlaceholderPage title="Chat" /> },
           { path: 'abandoned-carts', element: <PlaceholderPage title="Abandoned Carts" /> },
         ],
