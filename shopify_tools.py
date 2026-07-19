@@ -48,6 +48,7 @@ async def _get(endpoint, params=None):
         try:
             url = f"{BASE_URL}/{endpoint}"
             if not app.deps.shared_http_client:
+                logger.error("Shopify tool call failed: No HTTP client", extra={"endpoint": endpoint})
                 return None
             response = await app.deps.shared_http_client.get(
                 url,
@@ -57,11 +58,23 @@ async def _get(endpoint, params=None):
             )
 
             if response.status_code == 200:
+                logger.info("Shopify tool call succeeded", extra={
+                    "endpoint": endpoint,
+                    "status_code": response.status_code
+                })
                 return response.json()
 
+            logger.warning("Shopify tool call returned non-200", extra={
+                "endpoint": endpoint,
+                "status_code": response.status_code
+            })
             return None
 
-        except Exception:
+        except Exception as e:
+            logger.error("Shopify tool call failed with exception", extra={
+                "endpoint": endpoint,
+                "error": str(e)
+            })
             return None
 
 
@@ -331,6 +344,8 @@ async def get_all_products():
 # -------------------------------------------------------------------
 # Forecasting / Operations Tools
 # -------------------------------------------------------------------
+from datetime import datetime, timedelta
+from app.logger import logger
 
 async def _get_product_stock(product_title):
     """

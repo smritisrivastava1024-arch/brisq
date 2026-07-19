@@ -15,6 +15,7 @@ This file is synchronous because your existing agent functions are synchronous.
 """
 
 import json
+from app.logger import logger
 
 
 CLASSIFIER_SYSTEM_PROMPT = """You are the routing classifier for Shiftora, an AI operations platform for e-commerce businesses.
@@ -264,6 +265,10 @@ async def route_message(message, client, model, agent_functions, history=None):
         combined_reply = results[0][1]
     else:
         combined_reply = await merge_answers(message, results, client, model)
+
+    logger.info("Message routed successfully", extra={
+        "agents_used": agents_needed
+    })
 
     return {
         "agents_used": agents_needed,
