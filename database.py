@@ -2,7 +2,9 @@ import sqlite3
 import json
 from contextlib import contextmanager
 
-DB_NAME = "brisq.db"
+import os
+
+DB_NAME = os.getenv("DB_NAME", "brisq.db")
 
 
 @contextmanager
@@ -14,6 +16,15 @@ def get_connection():
     finally:
         conn.close()
 
+def check_health() -> bool:
+    """Returns True if the database is readable/writable."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            return True
+    except sqlite3.Error:
+        return False
 
 def initialize_database():
     """

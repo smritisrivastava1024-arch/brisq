@@ -97,6 +97,14 @@ python setup_rag.py           # creates chroma_db/ vector store from policies.tx
 Re-run these scripts any time you need to reset to a clean state.
 
 **4. Start the API server**
+
+**Option A: Using Docker (Recommended for Deployment)**
+```bash
+docker compose up --build
+```
+This spins up the FastAPI app inside a container, mapping port 8000. It uses local volumes to persist your `brisq.db` and `chroma_db/` across container restarts.
+
+**Option B: Running Locally (Manual)**
 ```bash
 uvicorn app.main:app --reload
 ```

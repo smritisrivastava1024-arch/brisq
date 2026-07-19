@@ -10,12 +10,14 @@ Run with:
     uvicorn app.main:app --reload
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import time
 
 from app.logger import logger
+import database
+from app.deps import check_chroma_health
 
 from app.config import CORS_ORIGINS
 from app.routers import chat, approvals, abandoned_carts, auth
@@ -75,6 +77,26 @@ app.include_router(approvals.router)
 app.include_router(abandoned_carts.router)
 app.include_router(auth.router)
 
+@app.get("/health")
+def health_check():
+    db_ok = database.check_health()
+    chroma_ok = check_chroma_health()
+    
+    if db_ok and chroma_ok:
+        return {"status": "healthy"}
+    
+    raise HTTPException(
+        status_code=503, 
+        detail={
+            "status": "unhealthy", 
+            "db_ok": db_ok, 
+            "chroma_ok": chroma_ok
+        }
+    )
+
+# ---------------------------------------------------------------------------
+# SPA Mounts
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Root

@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the data directory to persist SQLite DB and Chroma DB
+      - ./data:/app/data
+    environment:
+      # You can pass additional environment variables here if .env is missing
+      - DB_NAME=data/brisq.db
+      - CHROMA_DB_PATH=data/chroma_db
+    env_file:
+      - .env
+    restart: unless-stopped

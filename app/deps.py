@@ -9,6 +9,7 @@ Shared FastAPI dependencies.
 """
 
 import httpx
+import os
 import chromadb
 from chromadb.utils import embedding_functions
 from fastapi import Header, HTTPException
@@ -39,11 +40,20 @@ async def close_clients():
 _embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
 )
-_chroma_client = chromadb.PersistentClient(path="./chroma_db")
+_chroma_db_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
+_chroma_client = chromadb.PersistentClient(path=_chroma_db_path)
 policy_collection = _chroma_client.get_or_create_collection(
     name="store_policies",
     embedding_function=_embedding_fn,
 )
+
+def check_chroma_health() -> bool:
+    """Returns True if the Chroma collection is responsive."""
+    try:
+        policy_collection.count()
+        return True
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------
