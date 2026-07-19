@@ -12,16 +12,25 @@ import httpx
 import chromadb
 from chromadb.utils import embedding_functions
 from fastapi import Header, HTTPException
-from groq import Groq
+from groq import AsyncGroq
 
 from app.config import GROQ_API_KEY, OWNER_PASSWORD
 
 # ---------------------------------------------------------------------------
-# Groq client (singleton at module level)
+# Clients (initialized via lifespan)
 # ---------------------------------------------------------------------------
-_http_client = httpx.Client(headers={"User-Agent": "Mozilla/5.0"})
+shared_http_client: httpx.AsyncClient = None
+groq_client: AsyncGroq = None
 
-groq_client = Groq(api_key=GROQ_API_KEY, http_client=_http_client)
+def init_clients():
+    global shared_http_client, groq_client
+    shared_http_client = httpx.AsyncClient(headers={"User-Agent": "Mozilla/5.0"})
+    groq_client = AsyncGroq(api_key=GROQ_API_KEY, http_client=shared_http_client)
+
+async def close_clients():
+    global shared_http_client
+    if shared_http_client:
+        await shared_http_client.aclose()
 
 # ---------------------------------------------------------------------------
 # ChromaDB policy collection (singleton at module level)

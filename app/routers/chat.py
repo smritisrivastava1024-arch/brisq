@@ -40,11 +40,11 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 @router.post("/chat/customer")
-def chat_customer_endpoint(request: ChatRequest):
+async def chat_customer_endpoint(request: ChatRequest):
     agent_functions = {
         "customer_ai": lambda msg: run_customer_ai(msg, request.history),
     }
-    return route_message(
+    return await route_message(
         request.message,
         groq_client,
         MODEL,
@@ -54,7 +54,7 @@ def chat_customer_endpoint(request: ChatRequest):
 
 
 @router.post("/chat/owner")
-def chat_owner_endpoint(
+async def chat_owner_endpoint(
     request: ChatRequest,
     _: None = Depends(require_owner),
 ):
@@ -67,7 +67,7 @@ def chat_owner_endpoint(
         "supplier_ai": lambda msg: run_supplier_ai(msg, request.history),
         "marketing_ai": lambda msg: run_marketing_ai(msg, groq_client, MODEL, request.history),
     }
-    return route_message(
+    return await route_message(
         request.message,
         groq_client,
         MODEL,
@@ -81,38 +81,38 @@ def chat_owner_endpoint(
 # ---------------------------------------------------------------------------
 
 @router.post("/customer-ai")
-def customer_ai_endpoint(request: ChatRequest):
-    return {"agent": "customer_ai", "response": run_customer_ai(request.message, request.history)}
+async def customer_ai_endpoint(request: ChatRequest):
+    return {"agent": "customer_ai", "response": await run_customer_ai(request.message, request.history)}
 
 
 @router.post("/operations-ai")
-def operations_ai_endpoint(request: ChatRequest):
-    return {"agent": "operations_ai", "response": run_operations_ai(request.message, request.history)}
+async def operations_ai_endpoint(request: ChatRequest):
+    return {"agent": "operations_ai", "response": await run_operations_ai(request.message, request.history)}
 
 
 @router.post("/finance-ai")
-def finance_ai_endpoint(request: ChatRequest):
-    return {"agent": "finance_ai", "response": run_finance_ai(request.message, request.history)}
+async def finance_ai_endpoint(request: ChatRequest):
+    return {"agent": "finance_ai", "response": await run_finance_ai(request.message, request.history)}
 
 
 @router.post("/growth-ai")
-def growth_ai_endpoint(request: ChatRequest):
-    return {"agent": "growth_ai", "response": run_growth_ai(request.message, request.history)}
+async def growth_ai_endpoint(request: ChatRequest):
+    return {"agent": "growth_ai", "response": await run_growth_ai(request.message, request.history)}
 
 
 @router.post("/executive-ai")
-def executive_ai_endpoint(request: ChatRequest):
-    return {"agent": "executive_ai", "response": run_executive_ai(request.message, request.history)}
+async def executive_ai_endpoint(request: ChatRequest):
+    return {"agent": "executive_ai", "response": await run_executive_ai(request.message, request.history)}
 
 
 @router.post("/supplier-ai")
-def supplier_ai_endpoint(request: ChatRequest):
-    return {"agent": "supplier_ai", "response": run_supplier_ai(request.message, request.history)}
+async def supplier_ai_endpoint(request: ChatRequest):
+    return {"agent": "supplier_ai", "response": await run_supplier_ai(request.message, request.history)}
 
 
 @router.post("/marketing-ai")
-def marketing_ai_endpoint(request: ChatRequest):
+async def marketing_ai_endpoint(request: ChatRequest):
     return {
         "agent": "marketing_ai",
-        "response": run_marketing_ai(request.message, groq_client, MODEL, request.history),
+        "response": await run_marketing_ai(request.message, groq_client, MODEL, request.history),
     }

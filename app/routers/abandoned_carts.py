@@ -27,7 +27,7 @@ router = APIRouter()
 
 
 @router.post("/abandoned-carts/create")
-def create_abandoned_cart_endpoint(
+async def create_abandoned_cart_endpoint(
     request: AbandonedCartRequest,
     _: None = Depends(require_owner),
 ):
@@ -44,12 +44,12 @@ def create_abandoned_cart_endpoint(
 
 
 @router.get("/abandoned-carts")
-def list_abandoned_carts(_: None = Depends(require_owner)):
+async def list_abandoned_carts(_: None = Depends(require_owner)):
     return {"pending_abandoned_carts": get_pending_abandoned_carts()}
 
 
 @router.post("/abandoned-carts/{cart_token}/generate-drafts")
-def generate_abandoned_cart_drafts(
+async def generate_abandoned_cart_drafts(
     cart_token: str,
     _: None = Depends(require_owner),
 ):
@@ -93,7 +93,7 @@ COUPON:
 <suggested coupon or incentive>
 """
 
-    response = groq_client.chat.completions.create(
+    response = await groq_client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,

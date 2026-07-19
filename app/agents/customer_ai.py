@@ -36,7 +36,7 @@ def _search_policies(query: str) -> str:
     return "No relevant policy found."
 
 
-def run_customer_ai(user_message: str, history=None) -> str:
+async def run_customer_ai(user_message: str, history=None) -> str:
     messages = [
         {
             "role": "system",
@@ -57,7 +57,7 @@ def run_customer_ai(user_message: str, history=None) -> str:
 
     tools = support_tools + inventory_tools + policy_tools
 
-    response = groq_client.chat.completions.create(
+    response = await groq_client.chat.completions.create(
         model=MODEL,
         messages=messages,
         tools=tools,
@@ -80,11 +80,11 @@ def run_customer_ai(user_message: str, history=None) -> str:
             args = _safe_tool_args(tool_call)
 
             if tool_name == "get_order_status":
-                result = get_order_status(args["order_id"])
+                result = await get_order_status(args["order_id"])
             elif tool_name == "check_refund":
-                result = check_refund(args["order_id"])
+                result = await check_refund(args["order_id"])
             elif tool_name == "check_inventory":
-                result = check_inventory(args["item_name"])
+                result = await check_inventory(args["item_name"])
             elif tool_name == "search_policies":
                 result = _search_policies(args["query"])
             else:
@@ -100,7 +100,7 @@ def run_customer_ai(user_message: str, history=None) -> str:
 
         messages.append(STRICT_INSTRUCTION)
 
-        final = groq_client.chat.completions.create(
+        final = await groq_client.chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0,

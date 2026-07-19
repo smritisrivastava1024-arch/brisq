@@ -29,22 +29,22 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 @router.get("/approvals")
-def list_approvals(_: None = Depends(require_owner)):
+async def list_approvals(_: None = Depends(require_owner)):
     return {"pending_approvals": get_pending_approvals()}
 
 
 @router.get("/approvals/all")
-def list_all_approvals(_: None = Depends(require_owner)):
+async def list_all_approvals(_: None = Depends(require_owner)):
     return {"approvals": get_all_approvals()}
 
 
 @router.post("/approvals/{approval_id}/approve")
-def approve_approval(approval_id: int, _: None = Depends(require_owner)):
+async def approve_approval(approval_id: int, _: None = Depends(require_owner)):
     approve_request(approval_id)
     return {"message": "Approval marked as approved.", "approval_id": approval_id}
 
 
 @router.post("/approvals/{approval_id}/reject")
-def reject_approval(approval_id: int, _: None = Depends(require_owner)):
+async def reject_approval(approval_id: int, _: None = Depends(require_owner)):
     reject_request(approval_id)
     return {"message": "Approval marked as rejected.", "approval_id": approval_id}

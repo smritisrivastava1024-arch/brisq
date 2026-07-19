@@ -34,7 +34,7 @@ def _safe_tool_args(tool_call) -> dict:
         return {}
 
 
-def run_operations_ai(user_message: str, history=None) -> str:
+async def run_operations_ai(user_message: str, history=None) -> str:
     messages = [
         {
             "role": "system",
@@ -53,7 +53,7 @@ def run_operations_ai(user_message: str, history=None) -> str:
 
     messages.append({"role": "user", "content": user_message})
 
-    response = groq_client.chat.completions.create(
+    response = await groq_client.chat.completions.create(
         model=MODEL,
         messages=messages,
         tools=operations_tools,
@@ -77,13 +77,13 @@ def run_operations_ai(user_message: str, history=None) -> str:
             days = args.get("days", 30)
 
             if tool_name == "forecast_reorder":
-                result = forecast_reorder(args["item_name"])
+                result = await forecast_reorder(args["item_name"])
             elif tool_name == "get_all_products":
-                result = get_all_products()
+                result = await get_all_products()
             elif tool_name == "forecast_all_reorders":
-                result = forecast_all_reorders()
+                result = await forecast_all_reorders()
             elif tool_name == "get_order_insights":
-                result = get_order_insights(days)
+                result = await get_order_insights(days)
             else:
                 result = "Tool not found."
 
@@ -97,7 +97,7 @@ def run_operations_ai(user_message: str, history=None) -> str:
 
         messages.append(STRICT_INSTRUCTION)
 
-        final = groq_client.chat.completions.create(
+        final = await groq_client.chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0,

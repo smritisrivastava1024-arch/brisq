@@ -173,11 +173,11 @@ Classify the current user message using the available Shiftora agents.
 Return only JSON."""
 
 
-def classify_intent(message, client, model, history=None):
+async def classify_intent(message, client, model, history=None):
     """
     Ask the LLM which agent(s) should handle this message.
     """
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": CLASSIFIER_SYSTEM_PROMPT},
@@ -209,7 +209,7 @@ def classify_intent(message, client, model, history=None):
         return []
 
 
-def route_message(message, client, model, agent_functions, history=None):
+async def route_message(message, client, model, agent_functions, history=None):
     """
     Routes a user message to one or more specialist agents.
 
@@ -224,7 +224,7 @@ def route_message(message, client, model, agent_functions, history=None):
         "supplier_ai": run_supplier_ai,
     }
     """
-    agents_needed = classify_intent(message, client, model, history)
+    agents_needed = await classify_intent(message, client, model, history)
 
     if not agents_needed:
         return {
@@ -249,7 +249,7 @@ def route_message(message, client, model, agent_functions, history=None):
 
         try:
             agent_fn = agent_functions[agent_name]
-            answer = agent_fn(message)
+            answer = await agent_fn(message)
             results.append((agent_name, answer))
 
         except Exception as error:
@@ -263,7 +263,7 @@ def route_message(message, client, model, agent_functions, history=None):
     if len(results) == 1:
         combined_reply = results[0][1]
     else:
-        combined_reply = merge_answers(message, results, client, model)
+        combined_reply = await merge_answers(message, results, client, model)
 
     return {
         "agents_used": agents_needed,
@@ -271,7 +271,7 @@ def route_message(message, client, model, agent_functions, history=None):
     }
 
 
-def merge_answers(original_message, results, client, model):
+async def merge_answers(original_message, results, client, model):
     """
     When multiple agents answer, merge them into one clean response.
     """
@@ -299,7 +299,7 @@ Rules:
 - Keep the answer practical for a business owner.
 """
 
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": merge_prompt}],
         temperature=0,

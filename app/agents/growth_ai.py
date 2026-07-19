@@ -10,7 +10,7 @@ from app.config import MODEL
 from app.deps import groq_client
 
 
-def run_growth_ai(user_message: str, history=None) -> str:
+async def run_growth_ai(user_message: str, history=None) -> str:
     messages = [
         {
             "role": "system",
@@ -33,7 +33,7 @@ def run_growth_ai(user_message: str, history=None) -> str:
 
     messages.append({"role": "user", "content": user_message})
 
-    response = groq_client.chat.completions.create(
+    response = await groq_client.chat.completions.create(
         model=MODEL,
         messages=messages,
         temperature=0.4,

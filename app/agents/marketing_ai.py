@@ -19,7 +19,7 @@ from app.config import MODEL
 from app.deps import groq_client
 
 
-def run_marketing_ai(user_message: str, client=None, model: str = MODEL, history=None) -> str:
+async def run_marketing_ai(user_message: str, client=None, model: str = MODEL, history=None) -> str:
     """
     client and model kept as optional parameters for backward compatibility
     with any callers that pass them explicitly; internally always uses the
@@ -37,7 +37,7 @@ def run_marketing_ai(user_message: str, client=None, model: str = MODEL, history
         or "recover cart" in lower_message
         or "cart recovery" in lower_message
     ):
-        abandoned_data = get_abandoned_checkouts(days=7)
+        abandoned_data = await get_abandoned_checkouts(days=7)
 
         prompt = f"""
 You are Brisq Marketing AI.
@@ -65,7 +65,7 @@ Important:
 - Owner must approve before sending.
 """
 
-        response = _client.chat.completions.create(
+        response = await _client.chat.completions.create(
             model=_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4,
@@ -94,7 +94,7 @@ Important:
 
     messages.append({"role": "user", "content": user_message})
 
-    response = _client.chat.completions.create(
+    response = await _client.chat.completions.create(
         model=_model,
         messages=messages,
         temperature=0.5,

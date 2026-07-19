@@ -12,7 +12,8 @@ Includes:
 """
 
 import os
-import requests
+import httpx
+import asyncio
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -30,31 +31,38 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
+shopify_semaphore = asyncio.Semaphore(10)
+
 
 # -------------------------------------------------------------------
 # Helper Functions
 # -------------------------------------------------------------------
 
-def _get(endpoint, params=None):
+async def _get(endpoint, params=None):
     """
     Simple GET helper for Shopify Admin API.
     """
-    try:
-        url = f"{BASE_URL}/{endpoint}"
-        response = requests.get(
-            url,
-            headers=HEADERS,
-            params=params,
-            timeout=30
-        )
+    import app.deps
+    async with shopify_semaphore:
+        # Shopify REST rate limit is 2 req/sec per store on standard plans
+        try:
+            url = f"{BASE_URL}/{endpoint}"
+            if not app.deps.shared_http_client:
+                return None
+            response = await app.deps.shared_http_client.get(
+                url,
+                headers=HEADERS,
+                params=params,
+                timeout=30
+            )
 
-        if response.status_code == 200:
-            return response.json()
+            if response.status_code == 200:
+                return response.json()
 
-        return None
+            return None
 
-    except Exception:
-        return None
+        except Exception:
+            return None
 
 
 def _safe_float(value):
@@ -74,7 +82,7 @@ def _money(value):
     return f"₹{value:,.2f}"
 
 
-def _orders_between(start, end=None):
+async def _orders_between(start, end=None):
     """
     Fetch Shopify orders between start and optional end datetime.
     """
@@ -92,7 +100,7 @@ def _orders_between(start, end=None):
     if end:
         params["created_at_max"] = end.strftime("%Y-%m-%dT23:59:59Z")
 
-    data = _get("orders.json", params=params)
+    data = await _get("orders.json", params=params)
 
     if not data or not data.get("orders"):
         return []
@@ -136,11 +144,11 @@ def _shipping_amount(order):
     return _safe_float(shop_money.get("amount"))
 
 
-def _get_order_by_number_or_id(order_id):
+async def _get_order_by_number_or_id(order_id):
     """
     Find order by Shopify order number like 1001 or by raw Shopify order ID.
     """
-    data = _get("orders.json", params={
+    data = await _get("orders.json", params={
         "name": f"#{order_id}",
         "status": "any",
         "fields": (
@@ -154,7 +162,7 @@ def _get_order_by_number_or_id(order_id):
     if data and data.get("orders"):
         return data["orders"][0]
 
-    data = _get(f"orders/{order_id}.json")
+    data = await _get(f"orders/{order_id}.json")
 
     if data and "order" in data:
         return data["order"]
@@ -166,11 +174,11 @@ def _get_order_by_number_or_id(order_id):
 # Customer Support Tools
 # -------------------------------------------------------------------
 
-def get_order_status(order_id):
+async def get_order_status(order_id):
     """
     Look up real Shopify order status.
     """
-    order = _get_order_by_number_or_id(order_id)
+    order = await _get_order_by_number_or_id(order_id)
 
     if not order:
         return f"Order #{order_id} not found."
@@ -215,12 +223,12 @@ def get_order_status(order_id):
     )
 
 
-def check_refund(order_id):
+async def check_refund(order_id):
     """
     Check basic refund eligibility.
     This does not create or approve a refund.
     """
-    order = _get_order_by_number_or_id(order_id)
+    order = await _get_order_by_number_or_id(order_id)
 
     if not order:
         return f"Order #{order_id} not found."
@@ -265,11 +273,11 @@ def check_refund(order_id):
 # Inventory Tools
 # -------------------------------------------------------------------
 
-def check_inventory(item_name):
+async def check_inventory(item_name):
     """
     Search Shopify products by name and return stock levels.
     """
-    data = _get("products.json", params={
+    data = await _get("products.json", params={
         "title": item_name,
         "fields": "id,title,variants,status"
     })
@@ -304,11 +312,11 @@ def check_inventory(item_name):
     return f"{title}: In stock — {stock_detail}."
 
 
-def get_all_products():
+async def get_all_products():
     """
     Return all active product names from Shopify.
     """
-    data = _get("products.json", params={
+    data = await _get("products.json", params={
         "fields": "title,status",
         "status": "active",
         "limit": 250
@@ -324,11 +332,11 @@ def get_all_products():
 # Forecasting / Operations Tools
 # -------------------------------------------------------------------
 
-def _get_product_stock(product_title):
+async def _get_product_stock(product_title):
     """
     Get current total stock for a product.
     """
-    data = _get("products.json", params={
+    data = await _get("products.json", params={
         "title": product_title,
         "fields": "title,variants"
     })
@@ -347,12 +355,12 @@ def _get_product_stock(product_title):
     return title, total_stock
 
 
-def _get_sales_velocity(product_title, days=30):
+async def _get_sales_velocity(product_title, days=30):
     """
     Estimate average daily sales for a product from recent orders.
     """
     start = datetime.now() - timedelta(days=days)
-    orders = _orders_between(start)
+    orders = await _orders_between(start)
 
     total_sold = 0
 
@@ -369,16 +377,16 @@ def _get_sales_velocity(product_title, days=30):
     return total_sold / days
 
 
-def forecast_reorder(item_name):
+async def forecast_reorder(item_name):
     """
     Forecast stockout for one product.
     """
-    title, stock = _get_product_stock(item_name)
+    title, stock = await _get_product_stock(item_name)
 
     if title is None:
         return f"No product found matching '{item_name}'."
 
-    avg_daily_sales = _get_sales_velocity(title, days=30)
+    avg_daily_sales = await _get_sales_velocity(title, days=30)
 
     if avg_daily_sales <= 0:
         return (
@@ -405,11 +413,11 @@ def forecast_reorder(item_name):
     )
 
 
-def forecast_all_reorders():
+async def forecast_all_reorders():
     """
     Forecast reorder needs for all active products.
     """
-    data = _get("products.json", params={
+    data = await _get("products.json", params={
         "fields": "title,variants",
         "status": "active",
         "limit": 250
@@ -429,7 +437,7 @@ def forecast_all_reorders():
             for variant in product.get("variants", [])
         )
 
-        avg_daily_sales = _get_sales_velocity(title, days=30)
+        avg_daily_sales = await _get_sales_velocity(title, days=30)
 
         if avg_daily_sales <= 0:
             lines.append(
@@ -472,11 +480,11 @@ def forecast_all_reorders():
     )
 
 
-def get_low_stock_products(threshold=10):
+async def get_low_stock_products(threshold=10):
     """
     Return products with total stock below threshold.
     """
-    data = _get("products.json", params={
+    data = await _get("products.json", params={
         "fields": "title,variants",
         "status": "active",
         "limit": 250
@@ -509,11 +517,11 @@ def get_low_stock_products(threshold=10):
     return "\n".join(lines)
 
 
-def get_fastest_selling_products(days=30):
+async def get_fastest_selling_products(days=30):
     """
     Return fastest-selling products based on units sold in recent orders.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
 
     if not orders:
         return f"No order data found in the last {days} days."
@@ -551,11 +559,11 @@ def get_fastest_selling_products(days=30):
     return "\n".join(lines)
 
 
-def get_order_insights(days=30):
+async def get_order_insights(days=30):
     """
     Returns fulfillment and pending order insights.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
 
     if not orders:
         return f"No order data found in the last {days} days."
@@ -612,11 +620,11 @@ def get_order_insights(days=30):
 # Finance Tools
 # -------------------------------------------------------------------
 
-def get_revenue_summary(days=7):
+async def get_revenue_summary(days=7):
     """
     Revenue, paid order count, and average order value.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
     paid_orders = _paid_orders(orders)
 
     if not paid_orders:
@@ -642,11 +650,11 @@ def get_revenue_summary(days=7):
     )
 
 
-def get_top_products(days=30):
+async def get_top_products(days=30):
     """
     Best-selling products by units and revenue.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
     paid_orders = _paid_orders(orders)
 
     if not paid_orders:
@@ -692,11 +700,11 @@ def get_top_products(days=30):
     return "\n".join(lines)
 
 
-def get_refund_summary(days=30):
+async def get_refund_summary(days=30):
     """
     Refund count, refund rate, and refunded amount.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
 
     if not orders:
         return f"No orders found in the last {days} days."
@@ -725,7 +733,7 @@ def get_refund_summary(days=30):
     )
 
 
-def get_revenue_trends():
+async def get_revenue_trends():
     """
     Compare this week vs last week and this month vs last month.
     """
@@ -736,11 +744,11 @@ def get_revenue_trends():
     last_week_end = now - timedelta(days=7)
 
     this_week_orders = _paid_orders(
-        _orders_between(this_week_start, now)
+        await _orders_between(this_week_start, now)
     )
 
     last_week_orders = _paid_orders(
-        _orders_between(last_week_start, last_week_end)
+        await _orders_between(last_week_start, last_week_end)
     )
 
     this_month_start = now.replace(day=1)
@@ -749,11 +757,11 @@ def get_revenue_trends():
     last_month_start = last_month_end.replace(day=1)
 
     this_month_orders = _paid_orders(
-        _orders_between(this_month_start, now)
+        await _orders_between(this_month_start, now)
     )
 
     last_month_orders = _paid_orders(
-        _orders_between(last_month_start, last_month_end)
+        await _orders_between(last_month_start, last_month_end)
     )
 
     def calculate_revenue(orders):
@@ -795,11 +803,11 @@ def get_revenue_trends():
     )
 
 
-def get_customer_insights(days=30):
+async def get_customer_insights(days=30):
     """
     New vs returning customers and top customers by spend.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
     paid_orders = _paid_orders(orders)
 
     if not paid_orders:
@@ -863,11 +871,11 @@ def get_customer_insights(days=30):
     return "\n".join(lines)
 
 
-def categorize_shopify_transactions(days=30):
+async def categorize_shopify_transactions(days=30):
     """
     Bookkeeping report with categories and journal entries.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
 
     if not orders:
         return f"No transactions found in the last {days} days."
@@ -933,13 +941,13 @@ def categorize_shopify_transactions(days=30):
     )
 
 
-def get_weekly_pnl_report():
+async def get_weekly_pnl_report():
     """
     Weekly profit and loss report.
     COGS and fees are estimates until actual cost data is connected.
     """
     days = 7
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
 
     paid_orders = _paid_orders(orders)
     refunded_orders = _refunded_orders(orders)
@@ -997,11 +1005,11 @@ def get_weekly_pnl_report():
     )
 
 
-def get_cash_flow_dashboard(days=30):
+async def get_cash_flow_dashboard(days=30):
     """
     Cash flow dashboard.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
 
     if not orders:
         return f"No cash flow data found in the last {days} days."
@@ -1051,11 +1059,11 @@ def get_cash_flow_dashboard(days=30):
     )
 
 
-def get_profit_forecast(days=30):
+async def get_profit_forecast(days=30):
     """
     Forecast revenue and profit based on recent average revenue.
     """
-    orders = _orders_between(datetime.now() - timedelta(days=days))
+    orders = await _orders_between(datetime.now() - timedelta(days=days))
     paid_orders = _paid_orders(orders)
 
     if not paid_orders:
@@ -1108,7 +1116,7 @@ def get_profit_forecast(days=30):
 # Refund / Chargeback Risk Tools
 # -------------------------------------------------------------------
 
-def analyze_refund_risk(order_id):
+async def analyze_refund_risk(order_id):
     """
     Analyze refund / chargeback risk for a Shopify order.
 
@@ -1116,7 +1124,7 @@ def analyze_refund_risk(order_id):
     This does NOT approve a refund.
     This only gives the owner a recommendation.
     """
-    order = _get_order_by_number_or_id(order_id)
+    order = await _get_order_by_number_or_id(order_id)
 
     if not order:
         return f"Order #{order_id} not found."
@@ -1201,11 +1209,11 @@ def analyze_refund_risk(order_id):
     )
 
 
-def suggest_refund_decision(order_id):
+async def suggest_refund_decision(order_id):
     """
     Lightweight wrapper that gives a decision-style recommendation.
     """
-    risk_report = analyze_refund_risk(order_id)
+    risk_report = await analyze_refund_risk(order_id)
 
     if "not found" in risk_report.lower():
         return risk_report
@@ -1224,46 +1232,46 @@ def suggest_refund_decision(order_id):
 # Optional Finance Utility Helpers
 # -------------------------------------------------------------------
 
-def get_finance_overview(days=30):
+async def get_finance_overview(days=30):
     """
     One combined finance overview using existing finance tools.
     """
     return (
         f"Finance Overview — Last {days} days\n\n"
-        f"{get_revenue_summary(days)}\n\n"
-        f"{get_revenue_trends()}\n\n"
-        f"{get_refund_summary(days)}\n\n"
-        f"{categorize_shopify_transactions(days)}\n\n"
-        f"{get_cash_flow_dashboard(days)}\n\n"
-        f"{get_profit_forecast(days)}"
+        f"{await get_revenue_summary(days)}\n\n"
+        f"{await get_revenue_trends()}\n\n"
+        f"{await get_refund_summary(days)}\n\n"
+        f"{await categorize_shopify_transactions(days)}\n\n"
+        f"{await get_cash_flow_dashboard(days)}\n\n"
+        f"{await get_profit_forecast(days)}"
     )
 
 
-def get_executive_snapshot():
+async def get_executive_snapshot():
     """
     Combined business snapshot for Executive AI.
     """
     return (
         f"Executive Snapshot\n\n"
-        f"{get_revenue_summary(30)}\n\n"
-        f"{get_revenue_trends()}\n\n"
-        f"{get_order_insights(30)}\n\n"
-        f"{get_cash_flow_dashboard(30)}\n\n"
-        f"{get_profit_forecast(30)}\n\n"
-        f"{forecast_all_reorders()}"
+        f"{await get_revenue_summary(30)}\n\n"
+        f"{await get_revenue_trends()}\n\n"
+        f"{await get_order_insights(30)}\n\n"
+        f"{await get_cash_flow_dashboard(30)}\n\n"
+        f"{await get_profit_forecast(30)}\n\n"
+        f"{await forecast_all_reorders()}"
     )
 # -------------------------------------------------------------------
 # Abandoned Cart / Checkout Tools
 # -------------------------------------------------------------------
 
-def get_abandoned_checkouts(days=7):
+async def get_abandoned_checkouts(days=7):
     """
     Fetch abandoned checkouts from Shopify.
     These are customers who started checkout but did not complete purchase.
     """
     since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%dT00:00:00Z")
 
-    data = _get("checkouts.json", params={
+    data = await _get("checkouts.json", params={
         "created_at_min": since,
         "status": "open",
         "limit": 50

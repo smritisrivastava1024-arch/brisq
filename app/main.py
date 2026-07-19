@@ -12,21 +12,28 @@ Run with:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from app.config import CORS_ORIGINS
 from app.routers import chat, approvals, abandoned_carts
+from app.deps import init_clients, close_clients
 
 from database import initialize_database
 
-app = FastAPI(title="Brisq E-commerce AI Operations API")
-
 # ---------------------------------------------------------------------------
-# Startup
+# Lifespan
 # ---------------------------------------------------------------------------
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     initialize_database()
+    init_clients()
+    yield
+    # Shutdown
+    await close_clients()
+
+app = FastAPI(title="Brisq E-commerce AI Operations API", lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------

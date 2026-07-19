@@ -42,13 +42,13 @@ def _safe_tool_args(tool_call) -> dict:
         return {}
 
 
-def create_refund_approval(order_id: str, reason: str = "Customer requested refund") -> str:
+async def create_refund_approval(order_id: str, reason: str = "Customer requested refund") -> str:
     """
     Business logic for creating a pending refund approval.
     Called directly by the finance agent's tool dispatch.
     Writes to the DB-backed approval system (database.create_approval).
     """
-    risk_report = analyze_refund_risk(order_id)
+    risk_report = await analyze_refund_risk(order_id)
 
     if "not found" in risk_report.lower():
         return risk_report
@@ -74,7 +74,7 @@ def create_refund_approval(order_id: str, reason: str = "Customer requested refu
     )
 
 
-def run_finance_ai(user_message: str, history=None) -> str:
+async def run_finance_ai(user_message: str, history=None) -> str:
     messages = [
         {
             "role": "system",
@@ -108,7 +108,7 @@ def run_finance_ai(user_message: str, history=None) -> str:
 
     messages.append({"role": "user", "content": user_message})
 
-    response = groq_client.chat.completions.create(
+    response = await groq_client.chat.completions.create(
         model=MODEL,
         messages=messages,
         tools=finance_tools,
@@ -132,32 +132,32 @@ def run_finance_ai(user_message: str, history=None) -> str:
             days = args.get("days", 30)
 
             if tool_name == "get_revenue_summary":
-                result = get_revenue_summary(days)
+                result = await get_revenue_summary(days)
             elif tool_name == "get_top_products":
-                result = get_top_products(days)
+                result = await get_top_products(days)
             elif tool_name == "get_refund_summary":
-                result = get_refund_summary(days)
+                result = await get_refund_summary(days)
             elif tool_name == "get_revenue_trends":
-                result = get_revenue_trends()
+                result = await get_revenue_trends()
             elif tool_name == "get_customer_insights":
-                result = get_customer_insights(days)
+                result = await get_customer_insights(days)
             elif tool_name == "get_order_insights":
-                result = get_order_insights(days)
+                result = await get_order_insights(days)
             elif tool_name == "categorize_shopify_transactions":
-                result = categorize_shopify_transactions(days)
+                result = await categorize_shopify_transactions(days)
             elif tool_name == "analyze_refund_risk":
-                result = analyze_refund_risk(args["order_id"])
+                result = await analyze_refund_risk(args["order_id"])
             elif tool_name == "create_refund_approval":
-                result = create_refund_approval(
+                result = await create_refund_approval(
                     args["order_id"],
                     args.get("reason", "Customer requested refund"),
                 )
             elif tool_name == "get_weekly_pnl_report":
-                result = get_weekly_pnl_report()
+                result = await get_weekly_pnl_report()
             elif tool_name == "get_cash_flow_dashboard":
-                result = get_cash_flow_dashboard(days)
+                result = await get_cash_flow_dashboard(days)
             elif tool_name == "get_profit_forecast":
-                result = get_profit_forecast(days)
+                result = await get_profit_forecast(days)
             else:
                 result = "Tool not found."
 
@@ -174,7 +174,7 @@ def run_finance_ai(user_message: str, history=None) -> str:
 
         messages.append(STRICT_INSTRUCTION)
 
-        final = groq_client.chat.completions.create(
+        final = await groq_client.chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0,

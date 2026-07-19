@@ -19,13 +19,13 @@ from shopify_tools import (
 )
 
 
-def run_executive_ai(user_message: str, history=None) -> str:
-    finance_snapshot = get_revenue_summary(30)
-    trends = get_revenue_trends()
-    orders = get_order_insights(30)
-    cash_flow = get_cash_flow_dashboard(30)
-    profit = get_profit_forecast(30)
-    inventory = forecast_all_reorders()
+async def run_executive_ai(user_message: str, history=None) -> str:
+    finance_snapshot = await get_revenue_summary(30)
+    trends = await get_revenue_trends()
+    orders = await get_order_insights(30)
+    cash_flow = await get_cash_flow_dashboard(30)
+    profit = await get_profit_forecast(30)
+    inventory = await forecast_all_reorders()
 
     prompt = f"""
 You are Shiftora Executive AI.
@@ -63,7 +63,7 @@ Return:
 5. What to focus on today
 """
 
-    response = groq_client.chat.completions.create(
+    response = await groq_client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
