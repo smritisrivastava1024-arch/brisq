@@ -8,35 +8,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Auralis Dark Theme Colors
-        background: '#0B0F19', // Deep obsidian
-        surface: '#111827',    // Slate 900
-        'surface-lighter': '#1F2937', // Slate 800
-        primary: '#8B5CF6',    // Violet 500
-        'primary-hover': '#7C3AED', // Violet 600
-        secondary: '#0EA5E9',  // Sky 500
-        accent: '#F43F5E',     // Rose 500
-        'text-main': '#F9FAFB', // Gray 50
-        'text-muted': '#9CA3AF', // Gray 400
-        'text-dim': '#6B7280',   // Gray 500
+        // Minimalist Beige/Brown Theme Colors
+        background: '#FAF8F5', // Soft warm beige
+        surface: '#FFFFFF',    // Crisp white
+        'surface-lighter': '#F5F2EB', // Slightly darker beige
         
-        // Status Colors
-        success: '#10B981', // Emerald 500
-        danger: '#EF4444',  // Red 500
-        warning: '#F59E0B', // Amber 500
+        primary: '#5C4033',    // Dark brown
+        'primary-hover': '#422E25', // Darker brown
+        secondary: '#8B7355',  // Lighter brown
+        accent: '#D4A373',     // Warm accent
+        
+        'text-main': '#2C2621', // Very dark brown/off-black
+        'text-muted': '#7E736A', // Mid-brown
+        'text-dim': '#A0968E',   // Grey-brown
+        
+        // Status Colors (Muted Pastels for minimalist look)
+        success: '#829C8B', // Muted sage green
+        danger: '#B37D7D',  // Muted brick red
+        warning: '#C4A47C', // Muted tan/ochre
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'glass-gradient': 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
-        'primary-gradient': 'linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)',
-      },
       boxShadow: {
-        'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
-        'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
+        'sm': '0 1px 2px rgba(92, 64, 51, 0.05)',
+        'md': '0 4px 6px -1px rgba(92, 64, 51, 0.05), 0 2px 4px -1px rgba(92, 64, 51, 0.03)',
+        'lg': '0 10px 15px -3px rgba(92, 64, 51, 0.05), 0 4px 6px -2px rgba(92, 64, 51, 0.03)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

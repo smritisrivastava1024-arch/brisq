@@ -37,32 +37,28 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-[100px] pointer-events-none" />
-
-      <Card className="w-full max-w-md p-8 relative z-10 border border-white/10">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-sm p-8 shadow-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-sans font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+          <h1 className="text-2xl font-sans font-bold text-primary tracking-tight">
             Brisq Owner
           </h1>
-          <p className="text-text-muted mt-2">Enter your master password</p>
+          <p className="text-text-muted mt-2 text-sm">Log in to manage operations</p>
         </div>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <Input
             type="password"
             aria-label="password"
-            placeholder="Password"
+            placeholder="Master Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={error || undefined}
             disabled={isLoading}
           />
           
-          <Button type="submit" variant="primary" disabled={isLoading} className="w-full h-12">
-            {isLoading ? 'Unlocking...' : 'Unlock'}
+          <Button type="submit" variant="primary" disabled={isLoading} className="w-full">
+            {isLoading ? 'Unlocking...' : 'Unlock Dashboard'}
           </Button>
         </form>
       </Card>

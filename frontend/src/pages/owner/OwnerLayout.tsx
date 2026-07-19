@@ -12,23 +12,23 @@ export function OwnerLayout() {
   };
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
-    `px-4 py-3 block rounded-xl font-medium transition-all duration-200 ${
+    `px-4 py-2.5 block rounded-md font-medium transition-colors duration-200 text-sm ${
       isActive
-        ? 'bg-primary/20 text-primary shadow-[inset_4px_0_0_#8B5CF6]'
-        : 'text-text-muted hover:bg-white/5 hover:text-text-main'
+        ? 'bg-surface text-primary border border-[#E8E3DA] shadow-sm'
+        : 'text-text-muted hover:bg-surface-lighter hover:text-text-main border border-transparent'
     }`;
 
   return (
     <div className="min-h-screen bg-background flex text-text-main">
-      {/* Sidebar - Glassmorphic */}
-      <aside className="w-64 bg-surface/50 border-r border-white/10 flex flex-col backdrop-blur-xl shrink-0">
+      {/* Sidebar */}
+      <aside className="w-64 bg-background border-r border-[#E8E3DA] flex flex-col shrink-0">
         <div className="p-6">
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+          <h1 className="text-xl font-bold text-primary tracking-tight">
             Brisq OS
           </h1>
         </div>
         
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-4 py-4 space-y-2">
           <NavLink to="/owner/approvals" className={navClass}>
             Approvals
           </NavLink>
@@ -40,15 +40,15 @@ export function OwnerLayout() {
           </NavLink>
         </nav>
         
-        <div className="p-4 border-t border-white/10">
-          <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-danger hover:text-danger hover:bg-danger/10">
+        <div className="p-4 border-t border-[#E8E3DA]">
+          <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-danger hover:text-danger">
             Log out
           </Button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-background/50">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
         <Outlet />
       </main>
     </div>
