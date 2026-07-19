@@ -89,9 +89,9 @@ cp .env.example .env
 `brisq.db`, `store.db`, and `chroma_db/` are **gitignored** — they live only on your local machine and are never committed to the repo. Regenerate them by running:
 
 ```bash
-python setup_db.py            # creates store.db with sample orders/inventory
-python setup_sales_history.py # populates sales_history table in store.db
-python setup_rag.py           # creates chroma_db/ vector store from policies.txt
+python scripts/setup_db.py            # creates store.db with sample orders/inventory
+python scripts/setup_sales_history.py # populates sales_history table in store.db
+python scripts/setup_rag.py           # creates chroma_db/ vector store from policies.txt
 ```
 
 Re-run these scripts any time you need to reset to a clean state.
