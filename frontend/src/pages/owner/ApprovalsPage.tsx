@@ -54,14 +54,14 @@ function PayloadFields({ raw }: { raw: string }) {
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm mt-3">
       {fields.map(([label, value]) => (
-        <>
-          <dt key={`dt-${label}`} className="text-[#6B6455] font-semibold whitespace-nowrap">
+        <div key={label} className="contents">
+          <dt className="text-[#6B6455] font-semibold whitespace-nowrap">
             {label}
           </dt>
-          <dd key={`dd-${label}`} className="font-mono text-ink-navy break-all">
+          <dd className="font-mono text-ink-navy break-all">
             {value}
           </dd>
-        </>
+        </div>
       ))}
     </dl>
   );

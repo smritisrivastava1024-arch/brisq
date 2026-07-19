@@ -59,7 +59,7 @@ Each agent is powered by an LLM (Groq's `llama-3.3-70b-versatile`) and uses **fu
 - **Database:** SQLite
 - **Vector store:** ChromaDB with `sentence-transformers` embeddings
 - **Concurrency:** `asyncio`
-- **Frontend:** Vanilla HTML/CSS/JS chat interface
+- **Frontend:** React + Vite + Tailwind v4 (TypeScript)
 
 ## Setup
 
@@ -109,13 +109,17 @@ This spins up the FastAPI app inside a container, mapping port 8000. It uses loc
 uvicorn app.main:app --reload
 ```
 
-**5. Open the chat UI**
+**5. Start the frontend**
 
-Open `chat.html` directly in your browser, or serve it locally:
+The web interface has been rewritten in React. To start it:
+
 ```bash
-python -m http.server 5500
+cd frontend
+npm install
+npm run dev
 ```
-Then visit `http://127.0.0.1:5500/chat.html`
+
+Then visit `http://localhost:5173` for the customer chat, and `http://localhost:5173/owner/login` for the owner dashboard.
 
 ## API endpoints
 
