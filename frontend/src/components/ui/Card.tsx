@@ -1,23 +1,21 @@
-import React from 'react';
-import type { HTMLAttributes } from 'react';
+import type { ReactNode } from 'react';
 
-interface CardProps extends HTMLAttributes<HTMLDivElement> {
+interface CardProps {
+  children: ReactNode;
+  className?: string;
   hoverShadow?: boolean;
 }
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className = '', hoverShadow = false, ...props }, ref) => {
-    const baseStyles = 'bg-parchment border border-parchment-dim rounded-ledger overflow-hidden transition-shadow';
-    const shadowStyle = hoverShadow ? 'hover:shadow-[0_1px_3px_rgba(20,27,46,0.08)]' : '';
-
-    return (
-      <div
-        ref={ref}
-        className={`${baseStyles} ${shadowStyle} ${className}`}
-        {...props}
-      />
-    );
-  }
-);
-
-Card.displayName = 'Card';
+export function Card({ children, className = '', hoverShadow = false }: CardProps) {
+  return (
+    <div 
+      className={`
+        glass-panel rounded-2xl overflow-hidden
+        ${hoverShadow ? 'transition-all duration-300 hover:border-white/20 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] hover:-translate-y-[2px]' : ''}
+        ${className}
+      `}
+    >
+      {children}
+    </div>
+  );
+}

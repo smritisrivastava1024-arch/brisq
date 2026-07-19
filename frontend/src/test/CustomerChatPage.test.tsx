@@ -1,7 +1,7 @@
 /**
  * Smoke test: CustomerChatPage renders without crashing and shows empty state.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -35,7 +35,7 @@ describe('CustomerChatPage', () => {
   it('shows the Brisq header', () => {
     renderWithProviders(<CustomerChatPage />);
     // "Brisq" appears as the wordmark in the header
-    expect(screen.getAllByText('Brisq').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brisq/i).length).toBeGreaterThan(0);
   });
 
   it('shows the empty-state capability list', () => {

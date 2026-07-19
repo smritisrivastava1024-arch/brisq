@@ -8,6 +8,7 @@ export interface ChatMessage {
 }
 
 export interface ChatRequest {
+  agent_name: string;
   message: string;
   history?: ChatMessage[];
 }
@@ -17,15 +18,17 @@ export interface ChatResponse {
   agents_used?: string[];
 }
 
-export function useSendChatMessage(agent: string) {
+export function useSendChatMessage() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (payload: ChatRequest) => 
-      apiClient<ChatResponse>(`/chat/${agent}`, {
+    mutationFn: (payload: ChatRequest) => {
+      const { agent_name, ...bodyPayload } = payload;
+      return apiClient<ChatResponse>(`/chat/${agent_name}`, {
         method: 'POST',
-        body: JSON.stringify(payload)
-      }),
+        body: JSON.stringify(bodyPayload)
+      });
+    },
     onError: (err: Error) => {
       toast(`Couldn't reach the server — try again. (${err.message})`, 'error');
     }

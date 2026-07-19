@@ -36,3 +36,24 @@ export function useAuthToken(): string | null {
 
   return token;
 }
+
+export function useAuth() {
+  const login = async (password: string) => {
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) {
+      throw Object.assign(new Error('Login failed'), { status: res.status });
+    }
+    const data = await res.json();
+    authStore.setToken(data.access_token);
+  };
+
+  const logout = () => {
+    authStore.clearToken();
+  };
+
+  return { login, logout };
+}

@@ -1,46 +1,26 @@
-import React from 'react';
-import type { HTMLAttributes } from 'react';
 
-interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+interface BadgeProps {
   status: 'pending' | 'approved' | 'rejected';
+  className?: string;
 }
 
-export const Badge: React.FC<BadgeProps> = ({ status, className = '', ...props }) => {
-  const baseStyles = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full uppercase tracking-wider font-body';
-  
-  const statusConfig = {
-    pending: {
-      styles: 'bg-[#FDF7E7] text-signal-gold',
-      icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    },
-    approved: {
-      styles: 'bg-[#EEF5F1] text-verdigris',
-      icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      )
-    },
-    rejected: {
-      styles: 'bg-[#FDF3F2] text-rust',
-      icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      )
-    }
+export function Badge({ status, className = '' }: BadgeProps) {
+  const styles = {
+    pending: 'bg-warning/20 text-warning border-warning/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]',
+    approved: 'bg-success/20 text-success border-success/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]',
+    rejected: 'bg-danger/20 text-danger border-danger/30 shadow-[0_0_10px_rgba(239,68,68,0.15)]',
   };
 
-  const config = statusConfig[status];
+  const labels = {
+    pending: 'PENDING',
+    approved: 'APPROVED',
+    rejected: 'REJECTED',
+  };
 
   return (
-    <span className={`${baseStyles} ${config.styles} ${className}`} {...props}>
-      {config.icon}
-      {status}
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-full border ${styles[status]} ${className}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${status === 'pending' ? 'bg-warning animate-pulse' : status === 'approved' ? 'bg-success' : 'bg-danger'}`} />
+      {labels[status]}
     </span>
   );
-};
+}

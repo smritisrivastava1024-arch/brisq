@@ -59,9 +59,11 @@ describe('LoginPage', () => {
   });
 
   it('shows inline error on 401 (wrong password)', async () => {
-    const { apiClient } = await import('../api/client');
-    const { ApiError } = await import('../api/client');
-    vi.mocked(apiClient).mockRejectedValueOnce(new ApiError(401, 'Unauthorized'));
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: 'Unauthorized' })
+    });
 
     renderLogin();
     const user = userEvent.setup();

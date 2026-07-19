@@ -1,215 +1,142 @@
-import { Link } from 'react-router-dom';
 import { useAbandonedCarts, useGenerateDrafts } from '../../api/useAbandonedCarts';
 import type { AbandonedCart } from '../../api/useAbandonedCarts';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { Link } from 'react-router-dom';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(value);
+function formatCurrency(val: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 }
 
-// ---------------------------------------------------------------------------
-// Skeleton loader
-// ---------------------------------------------------------------------------
-function CartCardSkeleton() {
-  return (
-    <div className="bg-white border border-parchment-dim rounded-ledger p-6 flex flex-col gap-3">
-      <Skeleton className="h-5 w-1/3" />
-      <Skeleton className="h-4 w-1/2" />
-      <Skeleton className="h-4 w-3/5" />
-      <Skeleton className="h-8 w-32 mt-2" />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Drafts expansion panel — shown after generation
-// ---------------------------------------------------------------------------
-function DraftsPanel({ cart }: { cart: AbandonedCart }) {
-  return (
-    <div className="mt-5 pt-5 border-t border-parchment-dim flex flex-col gap-5">
-      {cart.email_draft && (
-        <div>
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] mb-2">
-            Email Draft
-          </p>
-          <pre className="text-sm font-mono text-ink-navy bg-parchment rounded-ledger p-4 whitespace-pre-wrap break-words border border-parchment-dim leading-relaxed">
-            {cart.email_draft}
-          </pre>
-        </div>
-      )}
-      {cart.whatsapp_draft && (
-        <div>
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] mb-2">
-            WhatsApp Draft
-          </p>
-          <pre className="text-sm font-mono text-ink-navy bg-parchment rounded-ledger p-4 whitespace-pre-wrap break-words border border-parchment-dim leading-relaxed">
-            {cart.whatsapp_draft}
-          </pre>
-        </div>
-      )}
-      {cart.suggested_coupon && (
-        <div>
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] mb-1">
-            Suggested Coupon
-          </p>
-          <code className="font-mono text-signal-gold font-semibold text-sm bg-[#FDF7E7] px-2.5 py-1 rounded-ledger border border-[#EAD89A]">
-            {cart.suggested_coupon}
-          </code>
-        </div>
-      )}
-      <div className="pt-1">
-        <Link
-          to="/owner/approvals"
-          className="text-sm font-semibold text-ink-navy underline underline-offset-2 hover:text-signal-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-gold rounded-sm"
-        >
-          Review in Approvals →
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Cart card
-// ---------------------------------------------------------------------------
 function CartCard({ cart }: { cart: AbandonedCart }) {
-  const generateMutation = useGenerateDrafts();
-  const hasDrafts = !!(cart.email_draft || cart.whatsapp_draft || cart.suggested_coupon);
-  const isGenerating = generateMutation.isPending && generateMutation.variables === cart.cart_token;
+  const { mutate, isPending } = useGenerateDrafts();
+  
+  const hasDrafts = cart.email_draft || cart.whatsapp_draft || cart.suggested_coupon;
+
+  const handleGenerate = () => {
+    mutate(cart.cart_token);
+  };
 
   return (
-    <Card className="bg-white p-6" hoverShadow>
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-4 mb-4">
+    <Card className="p-6 transition-all duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h2 className="font-display font-semibold text-lg text-ink-navy leading-snug">
-            {cart.customer_name}
-          </h2>
-          <p className="text-xs font-mono text-[#9AA0AE] mt-0.5">{cart.cart_token}</p>
+          <h3 className="text-lg font-bold text-text-main mb-1">{cart.customer_name}</h3>
+          <p className="text-text-dim text-sm">{cart.email || cart.phone || 'No contact info'}</p>
+          <div className="mt-3 text-sm">
+            <span className="text-text-muted">Items:</span> <span className="font-medium text-text-main">{cart.items}</span>
+          </div>
         </div>
-        <div className="text-right shrink-0">
-          <p className="font-mono font-semibold text-ink-navy text-lg">
+        
+        <div className="flex flex-col items-end gap-3">
+          <div className="font-mono text-xl text-primary font-semibold tracking-tight">
             {formatCurrency(cart.cart_value)}
-          </p>
-          {(cart.approved || cart.sent) && (
-            <p className="text-xs text-verdigris mt-0.5">
-              {cart.sent ? '✓ Sent' : '✓ Approved'}
-            </p>
-          )}
+          </div>
+          <a 
+            href={cart.checkout_url} 
+            target="_blank" 
+            rel="noreferrer"
+            className="text-xs text-secondary hover:text-secondary/80 underline underline-offset-2 transition-colors"
+          >
+            View Checkout
+          </a>
         </div>
       </div>
 
-      {/* Items */}
-      <div className="mb-4">
-        <p className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] mb-1">
-          Items
-        </p>
-        <p className="text-sm text-[#6B6455] leading-relaxed">{cart.items}</p>
+      <div className="mt-6 pt-4 border-t border-white/10">
+        {!hasDrafts ? (
+          <Button 
+            variant="primary" 
+            onClick={handleGenerate} 
+            disabled={isPending}
+            className="w-full sm:w-auto"
+          >
+            {isPending ? 'Generating...' : 'Generate recovery drafts'}
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-4 animate-[slideInUp_0.3s_ease-out]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-success uppercase tracking-wider px-2.5 py-1 bg-success/10 rounded-full border border-success/20">
+                Drafts Generated
+              </span>
+              <Link to="/owner/approvals" className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+                Review in Approvals 
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {cart.email_draft && (
+                <div className="bg-surface/50 border border-white/5 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-text-muted mb-2 uppercase tracking-wide">Email Draft</h4>
+                  <p className="text-sm text-text-main whitespace-pre-wrap font-serif italic opacity-90">{cart.email_draft}</p>
+                </div>
+              )}
+              {cart.whatsapp_draft && (
+                <div className="bg-surface/50 border border-white/5 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-text-muted mb-2 uppercase tracking-wide">WhatsApp Draft</h4>
+                  <p className="text-sm text-text-main whitespace-pre-wrap font-serif italic opacity-90">{cart.whatsapp_draft}</p>
+                </div>
+              )}
+            </div>
+            
+            {cart.suggested_coupon && (
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-lg w-fit">
+                <span className="text-xs font-medium uppercase tracking-wide opacity-80">Coupon:</span>
+                <span className="font-mono font-bold text-lg tracking-wider">{cart.suggested_coupon}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Checkout link */}
-      <div className="mb-5">
-        <p className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] mb-1">
-          Checkout URL
-        </p>
-        <a
-          href={cart.checkout_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-mono text-ink-navy underline underline-offset-2 hover:text-signal-gold transition-colors break-all"
-        >
-          {cart.checkout_url}
-        </a>
-      </div>
-
-      {/* Generate button — hidden once drafts exist */}
-      {!hasDrafts && (
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isGenerating}
-          onClick={() => generateMutation.mutate(cart.cart_token)}
-        >
-          {isGenerating ? 'Generating drafts…' : 'Generate recovery drafts'}
-        </Button>
-      )}
-
-      {/* Drafts panel — revealed after generation */}
-      {hasDrafts && <DraftsPanel cart={cart} />}
     </Card>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-function CartsEmpty() {
-  return (
-    <div className="flex flex-col items-start pt-16">
-      <span className="text-3xl mb-4">🛒</span>
-      <p className="font-display font-semibold text-xl text-ink-navy">
-        No abandoned carts at the moment.
-      </p>
-      <p className="text-sm text-[#6B6455] mt-2">
-        When a customer leaves checkout, their cart will appear here for review.
-      </p>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
 export function AbandonedCartsPage() {
-  const { data, isLoading, isError } = useAbandonedCarts();
-  const carts = data?.pending_carts ?? [];
+  const { data, isLoading } = useAbandonedCarts();
+  const carts = data?.pending_carts || [];
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-display font-semibold text-3xl text-ink-navy">
-          Abandoned Carts
-        </h1>
-        <p className="text-sm text-[#6B6455] mt-1">
-          Generate personalised recovery messages for customers who left without checking out.
-        </p>
+    <div className="flex flex-col h-full">
+      <div className="px-6 py-5 border-b border-white/10 bg-surface/50 backdrop-blur-md sticky top-0 z-10">
+        <h1 className="text-2xl font-bold">Abandoned Carts</h1>
+        <p className="text-text-muted text-sm mt-1">Recover lost revenue with AI-drafted messages</p>
       </div>
 
-      {/* Error */}
-      {isError && (
-        <p className="text-sm text-rust">
-          Could not load abandoned carts — check that the API is running.
-        </p>
-      )}
-
-      {/* Loading skeletons */}
-      {isLoading && (
-        <div className="flex flex-col gap-4">
-          <CartCardSkeleton />
-          <CartCardSkeleton />
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-3xl mx-auto flex flex-col gap-5">
+          {isLoading ? (
+            Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i} className="p-6 h-48">
+                <div className="flex justify-between">
+                  <div className="w-1/2">
+                    <Skeleton className="w-1/2 h-6 mb-2 bg-white/5" />
+                    <Skeleton className="w-1/3 h-4 bg-white/5" />
+                  </div>
+                  <Skeleton className="w-24 h-8 bg-white/5" />
+                </div>
+                <div className="mt-8">
+                  <Skeleton className="w-48 h-10 bg-white/5" />
+                </div>
+              </Card>
+            ))
+          ) : carts.length === 0 ? (
+            <div className="py-20 text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-white/5 flex items-center justify-center text-2xl mb-4 border border-white/10 shadow-glass">
+                🛒
+              </div>
+              <p className="text-lg font-medium text-text-main">No abandoned carts at the moment.</p>
+              <p className="text-text-muted text-sm mt-1">Customers are completing their purchases!</p>
+            </div>
+          ) : (
+            carts.map(cart => (
+              <CartCard key={cart.id} cart={cart} />
+            ))
+          )}
         </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && !isError && carts.length === 0 && <CartsEmpty />}
-
-      {/* Cart list */}
-      {!isLoading && !isError && carts.length > 0 && (
-        <div className="flex flex-col gap-4">
-          {carts.map((cart) => (
-            <CartCard key={cart.id} cart={cart} />
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

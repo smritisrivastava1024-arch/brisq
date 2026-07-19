@@ -1,8 +1,7 @@
-@import '@fontsource/fraunces/500.css';
-@import '@fontsource/fraunces/600.css';
-@import '@fontsource/ibm-plex-sans/400.css';
-@import '@fontsource/ibm-plex-sans/600.css';
-@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -12,18 +11,51 @@
 
 @layer utilities {
   @keyframes slideInUp {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
   }
   
-  @keyframes stampIn {
-    from { opacity: 0; transform: scale(1.4) rotate(-8deg); }
-    to { opacity: 1; transform: scale(1) rotate(-6deg); }
+  @keyframes statusPop {
+    0% { opacity: 0; transform: scale(0.9); }
+    50% { transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .glass-panel {
+    background-image: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
   }
 }
 
 @layer base {
   body {
-    @apply bg-parchment text-ink-navy font-body antialiased;
+    @apply bg-background text-text-main font-sans antialiased min-h-screen relative;
+  }
+  
+  ::selection {
+    background: rgba(139, 92, 246, 0.3);
+    color: white;
+  }
+  
+  /* Global custom scrollbar for dark mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
   }
 }

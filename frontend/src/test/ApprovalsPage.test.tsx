@@ -80,7 +80,7 @@ describe('ApprovalsPage', () => {
     
     // Check stamp appears (status changed to approved locally)
     await waitFor(() => {
-      expect(screen.getByText('APPROVED')).toBeInTheDocument();
+      expect(screen.getByText(/approved/i)).toBeInTheDocument();
     });
   });
 });

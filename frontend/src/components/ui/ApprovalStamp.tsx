@@ -12,39 +12,35 @@ export const ApprovalStamp: React.FC<ApprovalStampProps> = ({ status, onAnimatio
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) {
       setShouldAnimate(false);
-      // Fire immediately if no animation
       if (onAnimationEnd) onAnimationEnd();
     }
   }, [onAnimationEnd]);
 
-  const colorClass = status === 'approved' ? 'text-verdigris' : 'text-rust';
-  const animationClass = shouldAnimate ? 'motion-safe:animate-[stampIn_200ms_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]' : '';
+  const colorClass = status === 'approved' ? 'text-success drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'text-danger drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]';
+  const bgClass = status === 'approved' ? 'bg-success/10 border-success/30' : 'bg-danger/10 border-danger/30';
+  const animationClass = shouldAnimate ? 'motion-safe:animate-[statusPop_400ms_ease-out_forwards]' : '';
 
   return (
     <div 
-      className={`absolute top-5 right-5 pointer-events-none transform -rotate-6 scale-100 opacity-100 ${animationClass}`}
+      className={`absolute inset-0 z-10 pointer-events-none rounded-2xl flex items-center justify-center backdrop-blur-[2px] opacity-100 ${animationClass}`}
       onAnimationEnd={onAnimationEnd}
     >
-      <svg 
-        width="72" height="72" viewBox="0 0 100 100" 
-        className={`${colorClass}`} 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle 
-          cx="50" cy="50" r="44" fill="none" stroke="currentColor" 
-          strokeWidth="4" strokeDasharray="12,3,6,2,8,2" 
-        />
-        <circle 
-          cx="50" cy="50" r="38" fill="none" stroke="currentColor" 
-          strokeWidth="1.5" strokeDasharray="8,2" 
-        />
-        <text 
-          x="50" y="55" fontFamily="var(--font-mono)" fontSize="16" 
-          fontWeight="bold" fill="currentColor" textAnchor="middle" letterSpacing="1"
+      <div className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border backdrop-blur-md ${bgClass}`}>
+        <svg 
+          width="48" height="48" viewBox="0 0 24 24" 
+          fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className={`${colorClass}`} 
         >
-          {status.toUpperCase()}
-        </text>
-      </svg>
+          {status === 'approved' ? (
+            <path d="M20 6L9 17l-5-5" />
+          ) : (
+            <path d="M18 6L6 18M6 6l12 12" />
+          )}
+        </svg>
+        <span className={`text-lg font-bold tracking-widest uppercase ${colorClass}`}>
+          {status}
+        </span>
+      </div>
     </div>
   );
 };

@@ -1,230 +1,156 @@
 import { useState, useRef, useEffect } from 'react';
-import type { KeyboardEvent, FormEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useSendChatMessage } from '../api/useChat';
 import type { ChatMessage, ChatResponse } from '../api/useChat';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 
 // ---------------------------------------------------------------------------
-// Types
+// Shared Types & Hooks (same logic)
 // ---------------------------------------------------------------------------
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-function EmptyState() {
-  return (
-    <div className="flex-1 flex flex-col items-start justify-center px-6 pb-6">
-      <p className="text-sm font-semibold text-ink-navy mb-2 tracking-wide uppercase font-body">
-        What this can help with
-      </p>
-      <ul className="text-[#6B6455] text-sm font-body leading-relaxed space-y-1.5 list-none">
-        <li>— Order status and estimated delivery</li>
-        <li>— Refund eligibility and request status</li>
-        <li>— Product stock and availability</li>
-        <li>— Return, shipping, and cancellation policies</li>
-      </ul>
-      <p className="mt-6 text-xs text-[#9AA0AE]">
-        For issues with your account or payment, contact support directly.
-      </p>
-    </div>
-  );
-}
-
-function UserBubble({ content }: { content: string }) {
-  return (
-    <div className="flex justify-end">
-      <div className="max-w-[75%] bg-parchment-dim text-ink-navy text-sm font-body leading-relaxed px-4 py-3 rounded-ledger rounded-tr-sm">
-        {content}
-      </div>
-    </div>
-  );
-}
-
-function AssistantMessage({ content }: { content: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] font-body">
-        Brisq
-      </span>
-      <p className="text-sm font-body text-ink-navy leading-relaxed">
-        {content}
-      </p>
-    </div>
-  );
-}
-
-function AssistantSkeleton() {
-  return (
-    <div className="flex flex-col gap-2 pt-1">
-      <span className="text-[10px] font-semibold tracking-widest uppercase text-[#9AA0AE] font-body">
-        Brisq
-      </span>
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-3.5 w-4/5" />
-        <Skeleton className="h-3.5 w-3/5" />
-        <Skeleton className="h-3.5 w-2/3" />
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
-const MAX_HISTORY_TURNS = 10; // last N user+assistant pairs
-
 export function CustomerChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const listRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  
+  const bottomRef = useRef<HTMLDivElement>(null);
+  
+  const { mutate: sendMessage, isPending } = useSendChatMessage();
 
-  const sendMutation = useSendChatMessage('customer');
-
-  // Scroll to bottom whenever messages change or while loading
+  // Scroll to bottom when messages change
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [messages, sendMutation.isPending]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isPending]);
 
-  function buildHistory(): ChatMessage[] {
-    // Take the last MAX_HISTORY_TURNS messages as alternating user/assistant pairs
-    return messages
-      .slice(-MAX_HISTORY_TURNS * 2)
-      .map((m) => ({ role: m.role, content: m.content }));
-  }
+  const handleSend = () => {
+    const text = inputValue.trim();
+    if (!text) return;
 
-  function handleSend() {
-    const text = input.trim();
-    if (!text || sendMutation.isPending) return;
+    // 1. Append user message
+    const newMsg: ChatMessage = { role: 'user', content: text };
+    const updatedHistory = [...messages, newMsg];
+    setMessages(updatedHistory);
+    setInputValue('');
 
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: text,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-
-    sendMutation.mutate(
-      { message: text, history: buildHistory() },
+    // 2. Call API, sending up to last 10 messages for context
+    const historyForApi = updatedHistory.slice(-10);
+    
+    sendMessage(
+      { agent_name: 'customer-ai', message: text, history: historyForApi },
       {
         onSuccess: (data: ChatResponse) => {
-          const assistantMsg: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: data.reply,
-          };
-          setMessages((prev) => [...prev, assistantMsg]);
+          setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
         },
         onError: () => {
-          // useToast is already called inside useSendChatMessage onError
-          // Optionally also append an inline error message
-          const errMsg: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: 'Sorry — something went wrong. Please try again.',
-          };
-          setMessages((prev) => [...prev, errMsg]);
-        },
+          setMessages((prev) => [
+            ...prev, 
+            { role: 'assistant', content: 'An error occurred. Please try again later.' }
+          ]);
+        }
       }
     );
-  }
+  };
 
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  }
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    handleSend();
-  }
-
-  const isEmpty = messages.length === 0 && !sendMutation.isPending;
+  };
 
   return (
-    <div className="min-h-screen bg-parchment flex flex-col items-center">
-      {/* Container */}
-      <div className="w-full max-w-[720px] flex flex-col h-screen">
+    <div className="min-h-screen bg-background text-text-main flex flex-col font-sans relative overflow-hidden">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Header */}
-        <header className="shrink-0 border-b border-parchment-dim px-6 py-5">
-          <span className="font-display font-semibold text-xl text-ink-navy">
-            Brisq
-          </span>
-          <p className="text-xs text-[#9AA0AE] mt-0.5 font-body">
-            Store assistant
-          </p>
-        </header>
+      {/* Header */}
+      <header className="px-6 py-4 border-b border-white/10 bg-surface/50 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+          Brisq Support
+        </h1>
+        <span className="text-xs font-medium px-3 py-1 bg-white/5 rounded-full text-text-muted border border-white/10">
+          Powered by AI
+        </span>
+      </header>
 
-        {/* Message list */}
-        <div
-          ref={listRef}
-          className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6"
-        >
-          {isEmpty ? (
-            <EmptyState />
+      {/* Chat Area */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center z-10">
+        <div className="w-full max-w-2xl flex flex-col gap-6">
+          
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[40vh] text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-0.5 shadow-glow">
+                <div className="w-full h-full bg-surface rounded-full flex items-center justify-center text-2xl">
+                  ✨
+                </div>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2">How can we help?</h2>
+                <div className="text-text-muted flex flex-col gap-2">
+                  <p>— Track order status and estimated delivery</p>
+                  <p>— Check refund eligibility and request status</p>
+                  <p>— Inquire about product stock and availability</p>
+                  <p>— Review return, shipping, and cancellation policies</p>
+                </div>
+              </div>
+            </div>
           ) : (
-            <>
-              {messages.map((msg) =>
-                msg.role === 'user' ? (
-                  <UserBubble key={msg.id} content={msg.content} />
-                ) : (
-                  <AssistantMessage key={msg.id} content={msg.content} />
-                )
-              )}
-              {sendMutation.isPending && <AssistantSkeleton />}
-            </>
+            messages.map((msg, i) => (
+              <div 
+                key={i} 
+                className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`
+                  max-w-[85%] sm:max-w-[75%] px-5 py-3.5 rounded-2xl whitespace-pre-wrap leading-relaxed shadow-glass
+                  ${msg.role === 'user' 
+                    ? 'bg-primary-gradient text-white rounded-br-sm' 
+                    : 'bg-surface border border-white/10 text-text-main rounded-bl-sm'}
+                `}>
+                  {msg.content}
+                </div>
+              </div>
+            ))
           )}
+
+          {isPending && (
+            <div className="flex w-full justify-start">
+              <div className="max-w-[75%] px-5 py-4 rounded-2xl bg-surface border border-white/10 rounded-bl-sm flex flex-col gap-3 min-w-[200px]">
+                <Skeleton className="h-4 w-3/4 bg-white/5" />
+                <Skeleton className="h-4 w-1/2 bg-white/5" />
+                <Skeleton className="h-4 w-5/6 bg-white/5" />
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} className="h-4" />
         </div>
+      </main>
 
-        {/* Divider */}
-        <div className="shrink-0 border-t border-parchment-dim" />
-
-        {/* Input bar */}
-        <form
-          onSubmit={handleSubmit}
-          className="shrink-0 px-6 py-4 flex gap-3 items-end"
-        >
+      {/* Input Area */}
+      <footer className="p-4 bg-surface/50 backdrop-blur-md border-t border-white/10 z-10">
+        <div className="max-w-2xl mx-auto relative flex items-end gap-3">
           <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            className="w-full bg-surface/80 border border-white/10 rounded-2xl px-5 py-4 pr-16 text-sm text-text-main placeholder-text-muted resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all min-h-[60px] max-h-[200px] overflow-y-auto shadow-glass"
+            placeholder="Ask about your order, a refund, or store policy..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={sendMutation.isPending}
-            placeholder="Ask about your order, a refund, or store policy…"
+            disabled={isPending}
             rows={1}
-            className="
-              flex-1 resize-none bg-white border border-parchment-dim rounded-ledger
-              px-3.5 py-2.5 text-sm font-body text-ink-navy leading-relaxed
-              outline-none transition-colors
-              focus-visible:ring-2 focus-visible:ring-signal-gold
-              disabled:opacity-50
-              max-h-[120px] overflow-y-auto
-            "
-            style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
-          <Button
-            type="submit"
+          <Button 
+            onClick={handleSend} 
+            disabled={isPending || !inputValue.trim()}
             variant="primary"
-            size="sm"
-            disabled={sendMutation.isPending || !input.trim()}
-            className="shrink-0 self-end"
+            className="absolute right-2 bottom-2 rounded-xl p-2.5 h-auto w-auto"
+            aria-label="Send"
           >
-            {sendMutation.isPending ? 'Sending…' : 'Send'}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
           </Button>
-        </form>
-
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }

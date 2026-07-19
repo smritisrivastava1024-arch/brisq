@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { DevComponents } from './components/DevComponents';
-import { DevApi } from './components/DevApi';
+
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/owner/LoginPage';
 import { OwnerLayout } from './pages/owner/OwnerLayout';
@@ -42,8 +41,4 @@ export const router = createBrowserRouter([
       },
     ],
   },
-
-  // Dev routes — remove before production
-  { path: '/dev/components', element: <DevComponents /> },
-  { path: '/dev/api',        element: <DevApi /> },
 ]);
