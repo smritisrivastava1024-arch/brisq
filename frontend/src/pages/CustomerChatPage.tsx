@@ -5,9 +5,6 @@ import type { ChatMessage, ChatResponse } from '../api/useChat';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 
-// ---------------------------------------------------------------------------
-// Shared Types & Hooks (same logic)
-// ---------------------------------------------------------------------------
 export function CustomerChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -58,35 +55,29 @@ export function CustomerChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-main flex flex-col font-sans relative overflow-hidden">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[120px] pointer-events-none" />
-
+    <div className="min-h-screen bg-background text-text-main flex flex-col font-sans">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-white/10 bg-surface/50 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
-        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+      <header className="px-6 py-4 border-b border-[#E8E3DA] bg-background sticky top-0 z-10 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-primary tracking-tight">
           Brisq Support
         </h1>
-        <span className="text-xs font-medium px-3 py-1 bg-white/5 rounded-full text-text-muted border border-white/10">
+        <span className="text-xs font-medium px-2.5 py-1 bg-surface-lighter rounded-md text-text-muted border border-[#E8E3DA]">
           Powered by AI
         </span>
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center z-10">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center">
         <div className="w-full max-w-2xl flex flex-col gap-6">
           
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[40vh] text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-0.5 shadow-glow">
-                <div className="w-full h-full bg-surface rounded-full flex items-center justify-center text-2xl">
-                  ✨
-                </div>
+              <div className="w-12 h-12 rounded-full bg-surface-lighter border border-[#E8E3DA] flex items-center justify-center text-xl shadow-sm text-primary">
+                ✦
               </div>
               <div>
-                <h2 className="text-2xl font-bold mb-2">How can we help?</h2>
-                <div className="text-text-muted flex flex-col gap-2">
+                <h2 className="text-xl font-bold text-text-main mb-2">How can we help?</h2>
+                <div className="text-text-muted flex flex-col gap-2 text-sm">
                   <p>— Track order status and estimated delivery</p>
                   <p>— Check refund eligibility and request status</p>
                   <p>— Inquire about product stock and availability</p>
@@ -100,11 +91,16 @@ export function CustomerChatPage() {
                 key={i} 
                 className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
+                {msg.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-full bg-surface border border-[#E8E3DA] flex items-center justify-center mr-3 shrink-0 text-xs font-bold text-primary">
+                    B
+                  </div>
+                )}
                 <div className={`
-                  max-w-[85%] sm:max-w-[75%] px-5 py-3.5 rounded-2xl whitespace-pre-wrap leading-relaxed shadow-glass
+                  max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-xl whitespace-pre-wrap leading-relaxed shadow-sm text-sm
                   ${msg.role === 'user' 
-                    ? 'bg-primary-gradient text-white rounded-br-sm' 
-                    : 'bg-surface border border-white/10 text-text-main rounded-bl-sm'}
+                    ? 'bg-primary text-white rounded-br-sm' 
+                    : 'bg-surface border border-[#E8E3DA] text-text-main rounded-bl-sm'}
                 `}>
                   {msg.content}
                 </div>
@@ -114,10 +110,13 @@ export function CustomerChatPage() {
 
           {isPending && (
             <div className="flex w-full justify-start">
-              <div className="max-w-[75%] px-5 py-4 rounded-2xl bg-surface border border-white/10 rounded-bl-sm flex flex-col gap-3 min-w-[200px]">
-                <Skeleton className="h-4 w-3/4 bg-white/5" />
-                <Skeleton className="h-4 w-1/2 bg-white/5" />
-                <Skeleton className="h-4 w-5/6 bg-white/5" />
+              <div className="w-8 h-8 rounded-full bg-surface border border-[#E8E3DA] flex items-center justify-center mr-3 shrink-0 text-xs font-bold text-primary">
+                B
+              </div>
+              <div className="max-w-[75%] px-5 py-4 rounded-xl bg-surface border border-[#E8E3DA] rounded-bl-sm flex flex-col gap-2.5 min-w-[200px] shadow-sm">
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-5/6" />
               </div>
             </div>
           )}
@@ -126,10 +125,10 @@ export function CustomerChatPage() {
       </main>
 
       {/* Input Area */}
-      <footer className="p-4 bg-surface/50 backdrop-blur-md border-t border-white/10 z-10">
+      <footer className="p-4 bg-background border-t border-[#E8E3DA] z-10">
         <div className="max-w-2xl mx-auto relative flex items-end gap-3">
           <textarea
-            className="w-full bg-surface/80 border border-white/10 rounded-2xl px-5 py-4 pr-16 text-sm text-text-main placeholder-text-muted resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all min-h-[60px] max-h-[200px] overflow-y-auto shadow-glass"
+            className="w-full bg-surface border border-[#E8E3DA] rounded-xl px-4 py-3 pr-14 text-sm text-text-main placeholder-text-muted resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors min-h-[50px] max-h-[150px] overflow-y-auto shadow-sm"
             placeholder="Ask about your order, a refund, or store policy..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -141,10 +140,10 @@ export function CustomerChatPage() {
             onClick={handleSend} 
             disabled={isPending || !inputValue.trim()}
             variant="primary"
-            className="absolute right-2 bottom-2 rounded-xl p-2.5 h-auto w-auto"
+            className="absolute right-2 bottom-1.5 rounded-lg p-2 h-auto w-auto"
             aria-label="Send"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>

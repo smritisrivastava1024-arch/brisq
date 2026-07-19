@@ -59,7 +59,7 @@ describe('LoginPage', () => {
   });
 
   it('shows inline error on 401 (wrong password)', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
       json: async () => ({ detail: 'Unauthorized' })

@@ -28,7 +28,6 @@ interface Message {
   content: string;
 }
 
-// Each agent keeps its own history. Keyed by AgentId.
 type SessionHistory = Record<AgentId, Message[]>;
 
 function generateId() {
@@ -66,11 +65,11 @@ export function OwnerChatPage() {
     }));
     setInputValue('');
 
-    // 2. Prepare payload (convert to what the API expects)
+    // 2. Prepare payload
     const agentHistoryForApi: ChatMessage[] = currentMessages.map(m => ({
       role: m.role,
       content: m.content
-    })).slice(-10); // keep last 10 for context
+    })).slice(-10);
 
     // 3. Fire mutation
     sendMessage(
@@ -106,19 +105,19 @@ export function OwnerChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full bg-background relative">
       
-      {/* Agent Selector (Glass Header) */}
-      <div className="px-6 py-4 bg-surface/50 backdrop-blur-md border-b border-white/10 z-10 sticky top-0 flex items-center justify-between">
-        <div className="flex bg-background border border-white/10 rounded-xl overflow-hidden shadow-glass p-1">
+      {/* Agent Selector */}
+      <div className="px-6 py-4 bg-background border-b border-[#E8E3DA] z-10 sticky top-0 flex items-center justify-between">
+        <div className="flex bg-surface-lighter border border-[#E8E3DA] rounded-md p-1 shadow-sm overflow-x-auto w-full sm:w-auto hide-scrollbar">
           {AGENTS.map((agent) => (
             <button
               key={agent.id}
               onClick={() => setActiveAgent(agent.id)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded whitespace-nowrap transition-colors duration-200 ${
                 activeAgent === agent.id
-                  ? 'bg-primary/20 text-primary shadow-[0_0_10px_rgba(139,92,246,0.2)]'
-                  : 'text-text-muted hover:text-text-main hover:bg-white/5'
+                  ? 'bg-surface text-primary border border-[#E8E3DA] shadow-sm'
+                  : 'text-text-muted hover:text-text-main hover:bg-[#E8E3DA]/30 border border-transparent'
               }`}
             >
               {agent.label}
@@ -128,18 +127,16 @@ export function OwnerChatPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center">
         <div className="w-full max-w-3xl flex flex-col gap-6">
           
           {currentMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[40vh] text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-0.5 shadow-glow">
-                <div className="w-full h-full bg-surface rounded-full flex items-center justify-center text-2xl">
-                  🤖
-                </div>
+              <div className="w-12 h-12 rounded-full bg-surface-lighter border border-[#E8E3DA] flex items-center justify-center text-xl shadow-sm text-primary">
+                ✦
               </div>
               <div>
-                <h2 className="text-xl font-bold mb-1">
+                <h2 className="text-xl font-bold text-text-main mb-1">
                   {AGENTS.find(a => a.id === activeAgent)?.label} Agent
                 </h2>
                 <p className="text-text-muted text-sm">Send a message to begin the session.</p>
@@ -151,11 +148,16 @@ export function OwnerChatPage() {
                 key={msg.id} 
                 className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
+                {msg.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-full bg-surface border border-[#E8E3DA] flex items-center justify-center mr-3 shrink-0 text-xs font-bold text-primary">
+                    AI
+                  </div>
+                )}
                 <div className={`
-                  max-w-[85%] sm:max-w-[75%] px-5 py-3.5 rounded-2xl whitespace-pre-wrap leading-relaxed shadow-glass
+                  max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-xl whitespace-pre-wrap leading-relaxed shadow-sm text-sm
                   ${msg.role === 'user' 
-                    ? 'bg-primary-gradient text-white rounded-br-sm' 
-                    : 'bg-surface border border-white/10 text-text-main rounded-bl-sm'}
+                    ? 'bg-primary text-white rounded-br-sm' 
+                    : 'bg-surface border border-[#E8E3DA] text-text-main rounded-bl-sm'}
                 `}>
                   {msg.content}
                 </div>
@@ -165,10 +167,13 @@ export function OwnerChatPage() {
 
           {isPending && (
             <div className="flex w-full justify-start">
-              <div className="max-w-[75%] px-5 py-4 rounded-2xl bg-surface border border-white/10 rounded-bl-sm flex flex-col gap-3 min-w-[200px]">
-                <Skeleton className="h-4 w-3/4 bg-white/5" />
-                <Skeleton className="h-4 w-1/2 bg-white/5" />
-                <Skeleton className="h-4 w-5/6 bg-white/5" />
+              <div className="w-8 h-8 rounded-full bg-surface border border-[#E8E3DA] flex items-center justify-center mr-3 shrink-0 text-xs font-bold text-primary">
+                AI
+              </div>
+              <div className="max-w-[75%] px-5 py-4 rounded-xl bg-surface border border-[#E8E3DA] rounded-bl-sm flex flex-col gap-2.5 min-w-[200px] shadow-sm">
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-5/6" />
               </div>
             </div>
           )}
@@ -177,10 +182,10 @@ export function OwnerChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-surface/50 backdrop-blur-md border-t border-white/10 z-10 shrink-0">
+      <div className="p-4 bg-background border-t border-[#E8E3DA] shrink-0">
         <div className="max-w-3xl mx-auto relative flex items-end gap-3">
           <textarea
-            className="w-full bg-surface/80 border border-white/10 rounded-2xl px-5 py-4 pr-16 text-sm text-text-main placeholder-text-muted resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all min-h-[60px] max-h-[200px] overflow-y-auto shadow-glass"
+            className="w-full bg-surface border border-[#E8E3DA] rounded-xl px-4 py-3 pr-14 text-sm text-text-main placeholder-text-muted resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors min-h-[50px] max-h-[150px] overflow-y-auto shadow-sm"
             placeholder={`Message ${AGENTS.find(a => a.id === activeAgent)?.label} agent...`}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -192,10 +197,10 @@ export function OwnerChatPage() {
             onClick={handleSend} 
             disabled={isPending || !inputValue.trim()}
             variant="primary"
-            className="absolute right-2 bottom-2 rounded-xl p-2.5 h-auto w-auto"
+            className="absolute right-2 bottom-1.5 rounded-lg p-2 h-auto w-auto"
             aria-label="Send"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
