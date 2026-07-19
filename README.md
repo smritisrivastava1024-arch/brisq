@@ -98,7 +98,7 @@ Re-run these scripts any time you need to reset to a clean state.
 
 **4. Start the API server**
 ```bash
-uvicorn api:app --reload
+uvicorn app.main:app --reload
 ```
 
 **5. Open the chat UI**

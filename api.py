@@ -70,7 +70,7 @@ client = Groq(
 MODEL = "llama-3.3-70b-versatile"
 OWNER_PASSWORD = os.getenv("OWNER_PASSWORD", "changeme123")
 
-pending_refund_approvals = {}
+
 
 embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
@@ -97,9 +97,6 @@ class ChatRequest(BaseModel):
     history: list = []
 
 
-class RefundApprovalRequest(BaseModel):
-    order_id: str
-    reason: str = "Customer requested refund"
 
 class AbandonedCartRequest(BaseModel):
     cart_token: str
@@ -845,7 +842,7 @@ def root():
         "message": "Shiftora API running.",
         "customer_chat": "/chat/customer",
         "owner_chat": "/chat/owner",
-        "refund_approvals": "/refund-approvals",
+        "approvals": "/approvals",
         "agents": [
             "customer_ai",
             "operations_ai",
@@ -958,74 +955,7 @@ def marketing_ai_endpoint(request: ChatRequest):
     }
 
 
-@app.get("/refund-approvals")
-def list_refund_approvals(x_owner_password: str = Header(default="")):
-    if x_owner_password != OWNER_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid owner password")
 
-    return {
-        "pending_refund_approvals": list(pending_refund_approvals.values())
-    }
-
-
-@app.post("/refund-approvals/create")
-def create_refund_approval_endpoint(
-    request: RefundApprovalRequest,
-    x_owner_password: str = Header(default="")
-):
-    if x_owner_password != OWNER_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid owner password")
-
-    response = create_refund_approval(request.order_id, request.reason)
-
-    return {
-        "response": response,
-        "pending_refund_approvals": list(pending_refund_approvals.values())
-    }
-
-
-@app.post("/refund-approvals/{approval_id}/approve")
-def approve_refund_approval(
-    approval_id: str,
-    x_owner_password: str = Header(default="")
-):
-    if x_owner_password != OWNER_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid owner password")
-
-    if approval_id not in pending_refund_approvals:
-        raise HTTPException(status_code=404, detail="Approval not found")
-
-    pending_refund_approvals[approval_id]["status"] = "approved"
-    pending_refund_approvals[approval_id]["approved_at"] = datetime.now().isoformat()
-
-    return {
-        "message": (
-            "Refund approved by owner. "
-            "Shopify refund execution is intentionally not automatic yet. "
-            "Connect Shopify Refund API only after testing approvals safely."
-        ),
-        "approval": pending_refund_approvals[approval_id]
-    }
-
-
-@app.post("/refund-approvals/{approval_id}/reject")
-def reject_refund_approval(
-    approval_id: str,
-    x_owner_password: str = Header(default="")
-):
-    if x_owner_password != OWNER_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid owner password")
-
-    if approval_id not in pending_refund_approvals:
-        raise HTTPException(status_code=404, detail="Approval not found")
-
-    pending_refund_approvals[approval_id]["status"] = "rejected"
-    pending_refund_approvals[approval_id]["rejected_at"] = datetime.now().isoformat()
-
-    return {
-        "message": "Refund rejected by owner.",
-        "approval": pending_refund_approvals[approval_id]
-    }
 @app.post("/abandoned-carts/create")
 def create_abandoned_cart_endpoint(
     request: AbandonedCartRequest,
@@ -1174,6 +1104,14 @@ COUPON:
         "whatsapp_draft": whatsapp_part,
         "suggested_coupon": coupon_part
     }
+# ---------------------------------------------------------------------------
+# Approval Center — single source of truth for ALL approval types.
+# approval_type values in use:
+#   "refund"         — created by create_refund_approval() via finance_ai
+#   "abandoned_cart" — created by /abandoned-carts/{token}/generate-drafts
+# New approval types should use create_approval() from database.py and will
+# automatically appear here without any additional endpoint changes.
+# ---------------------------------------------------------------------------
 @app.get("/approvals")
 def list_approvals(x_owner_password: str = Header(default="")):
     if x_owner_password != OWNER_PASSWORD:
