@@ -61,27 +61,40 @@ Each agent is powered by an LLM (Groq's `llama-3.3-70b-versatile`) and uses **fu
 - **Concurrency:** `asyncio`
 - **Frontend:** Vanilla HTML/CSS/JS chat interface
 
-## Running it locally
+## Setup
 
 **1. Install dependencies**
 ```bash
-pip install fastapi uvicorn groq httpx chromadb sentence-transformers python-dotenv
+pip install -r requirements.txt
 ```
 
-**2. Set up your API key**
+**2. Configure environment variables**
 
-Create a `.env` file in the project root:
-```
-GROQ_API_KEY=your-groq-api-key-here
-```
-
-Get a free key at [console.groq.com](https://console.groq.com).
-
-**3. Build the database and vector store**
+Copy the example env file and fill in your real values:
 ```bash
-python setup_db.py
-python setup_rag.py
+cp .env.example .env
 ```
+
+| Variable | Description |
+|---|---|
+| `GROQ_API_KEY` | API key from [console.groq.com](https://console.groq.com) |
+| `OWNER_PASSWORD` | Password for owner-facing dashboard endpoints |
+| `SHOPIFY_STORE_URL` | Your store domain, e.g. `my-store.myshopify.com` |
+| `SHOPIFY_ACCESS_TOKEN` | Shopify Admin API private/custom app token |
+
+> **Note:** `.env` is gitignored. Never commit it. The `.env.example` file (safe to commit) lists every required key with placeholder values.
+
+**3. Generate local databases and vector store**
+
+`brisq.db`, `store.db`, and `chroma_db/` are **gitignored** — they live only on your local machine and are never committed to the repo. Regenerate them by running:
+
+```bash
+python setup_db.py            # creates store.db with sample orders/inventory
+python setup_sales_history.py # populates sales_history table in store.db
+python setup_rag.py           # creates chroma_db/ vector store from policies.txt
+```
+
+Re-run these scripts any time you need to reset to a clean state.
 
 **4. Start the API server**
 ```bash
