@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Brisq Owner Dashboard</title>
+<link rel="stylesheet" href="assets/styles.css">
 <style>
   :root {
     --bg: #0E0F11;
@@ -287,29 +288,37 @@
 
 </div>
 
+<script src="assets/config.js"></script>
+<script src="assets/api.js"></script>
 <script>
-  const API_BASE = "http://127.0.0.1:8000";
-  let ownerPassword = "";
+  function escapeHtml(unsafe) {
+    if (unsafe == null) return "";
+    return String(unsafe)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
   let conversationHistory = [];
 
   async function login() {
     const input = document.getElementById("password-input");
     const errorDiv = document.getElementById("login-error");
+    const loginBtn = document.querySelector(".login-box button");
     const pwd = input.value.trim();
 
     if (!pwd) {
       errorDiv.textContent = "Please enter a password.";
       return;
     }
+    
+    loginBtn.disabled = true;
 
     try {
-      const res = await fetch(`${API_BASE}/chat/owner`, {
+      const res = await fetchApi(`/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-owner-password": pwd
-        },
-        body: JSON.stringify({ message: "hello", history: [] })
+        body: JSON.stringify({ password: pwd })
       });
 
       if (res.status === 401) {
@@ -322,7 +331,8 @@
         return;
       }
 
-      ownerPassword = pwd;
+      const data = await res.json();
+      setSessionToken(data.token);
       document.getElementById("login-screen").style.display = "none";
       document.getElementById("dashboard-screen").style.display = "flex";
       document.getElementById("lock-indicator").textContent = "🔓 Unlocked";
@@ -332,6 +342,8 @@
 
     } catch (err) {
       errorDiv.textContent = `Could not reach server: ${err.message}`;
+    } finally {
+      loginBtn.disabled = false;
     }
   }
 
@@ -378,12 +390,8 @@
     const typingDiv = addMsg("thinking...", "agent", "routing");
 
     try {
-      const res = await fetch(`${API_BASE}/chat/owner`, {
+      const res = await fetchApi(`/chat/owner`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-owner-password": ownerPassword
-        },
         body: JSON.stringify({
           message: text,
           history: conversationHistory
@@ -417,15 +425,14 @@
   }
 
   async function loadApprovals() {
+    const btn = document.querySelector(".approval-box button");
+    if(btn) btn.disabled = true;
     const approvalsDiv = document.getElementById("approvals");
     approvalsDiv.innerHTML = "<p>Loading approvals...</p>";
 
     try {
-      const res = await fetch(`${API_BASE}/approvals`, {
-        method: "GET",
-        headers: {
-          "x-owner-password": ownerPassword
-        }
+      const res = await fetchApi(`/approvals`, {
+        method: "GET"
       });
 
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -454,14 +461,14 @@
         card.className = "approval-card";
 
         card.innerHTML = `
-          <h3>${approval.approval_type.toUpperCase()} — ${approval.title}</h3>
-          <p><strong>ID:</strong> ${approval.id}</p>
-          <p><strong>Reference:</strong> ${approval.reference_id}</p>
-          <p><strong>Status:</strong> ${approval.status}</p>
-          <p><strong>Description:</strong> ${approval.description || ""}</p>
-          <pre>${payloadText}</pre>
-          <button onclick="approveApproval(${approval.id})">Approve</button>
-          <button class="reject-btn" onclick="rejectApproval(${approval.id})">Reject</button>
+          <h3>${escapeHtml(approval.approval_type.toUpperCase())} — ${escapeHtml(approval.title)}</h3>
+          <p><strong>ID:</strong> ${escapeHtml(approval.id)}</p>
+          <p><strong>Reference:</strong> ${escapeHtml(approval.reference_id)}</p>
+          <p><strong>Status:</strong> ${escapeHtml(approval.status)}</p>
+          <p><strong>Description:</strong> ${escapeHtml(approval.description || "")}</p>
+          <pre>${escapeHtml(payloadText)}</pre>
+          <button onclick="approveApproval(${escapeHtml(approval.id)}, this)">Approve</button>
+          <button class="reject-btn" onclick="rejectApproval(${escapeHtml(approval.id)}, this)">Reject</button>
         `;
 
         approvalsDiv.appendChild(card);
@@ -469,16 +476,16 @@
 
     } catch (err) {
       approvalsDiv.innerHTML = `<p style="color: var(--warn);">Could not load approvals: ${err.message}</p>`;
+    } finally {
+      if(btn) btn.disabled = false;
     }
   }
 
-  async function approveApproval(id) {
+  async function approveApproval(id, btnElement) {
+    if(btnElement) btnElement.disabled = true;
     try {
-      const res = await fetch(`${API_BASE}/approvals/${id}/approve`, {
-        method: "POST",
-        headers: {
-          "x-owner-password": ownerPassword
-        }
+      const res = await fetchApi(`/approvals/${id}/approve`, {
+        method: "POST"
       });
 
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -488,16 +495,16 @@
 
     } catch (err) {
       addMsg(`Approval failed: ${err.message}`, "error");
+    } finally {
+      if(btnElement) btnElement.disabled = false;
     }
   }
 
-  async function rejectApproval(id) {
+  async function rejectApproval(id, btnElement) {
+    if(btnElement) btnElement.disabled = true;
     try {
-      const res = await fetch(`${API_BASE}/approvals/${id}/reject`, {
-        method: "POST",
-        headers: {
-          "x-owner-password": ownerPassword
-        }
+      const res = await fetchApi(`/approvals/${id}/reject`, {
+        method: "POST"
       });
 
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -507,6 +514,8 @@
 
     } catch (err) {
       addMsg(`Reject failed: ${err.message}`, "error");
+    } finally {
+      if(btnElement) btnElement.disabled = false;
     }
   }
 </script>

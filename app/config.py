@@ -16,6 +16,7 @@ MODEL: str = "llama-3.3-70b-versatile"
 
 # Owner dashboard
 OWNER_PASSWORD: str = os.getenv("OWNER_PASSWORD", "changeme123")
+JWT_SECRET: str = os.getenv("JWT_SECRET", "super-secret-default-key-please-change")
 
 # CORS — wildcard by default; tighten in production
 CORS_ORIGINS: list[str] = ["*"]

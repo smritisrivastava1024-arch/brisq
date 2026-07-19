@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import CORS_ORIGINS
-from app.routers import chat, approvals, abandoned_carts
+from app.routers import chat, approvals, abandoned_carts, auth
 from app.deps import init_clients, close_clients
 
 from database import initialize_database
@@ -54,6 +54,7 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(approvals.router)
 app.include_router(abandoned_carts.router)
+app.include_router(auth.router)
 
 
 # ---------------------------------------------------------------------------

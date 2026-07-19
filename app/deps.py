@@ -14,7 +14,8 @@ from chromadb.utils import embedding_functions
 from fastapi import Header, HTTPException
 from groq import AsyncGroq
 
-from app.config import GROQ_API_KEY, OWNER_PASSWORD
+import jwt
+from app.config import GROQ_API_KEY, OWNER_PASSWORD, JWT_SECRET
 
 # ---------------------------------------------------------------------------
 # Clients (initialized via lifespan)
@@ -48,7 +49,17 @@ policy_collection = _chroma_client.get_or_create_collection(
 # ---------------------------------------------------------------------------
 # Owner-auth dependency
 # ---------------------------------------------------------------------------
-def require_owner(x_owner_password: str = Header(default="")) -> None:
-    """FastAPI dependency — raises 401 if the owner password header is wrong."""
-    if x_owner_password != OWNER_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid owner password")
+def require_owner(authorization: str = Header(default="")) -> None:
+    """FastAPI dependency — raises 401 if the JWT token is missing or invalid."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token format")
+    
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        if payload.get("sub") != "owner":
+            raise HTTPException(status_code=401, detail="Invalid token scope")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
