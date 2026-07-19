@@ -1,4 +1,5 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom';
+import { DevComponents } from './components/DevComponents';
 
 function CustomerChat() {
   return (
@@ -56,5 +57,9 @@ export const router = createBrowserRouter([
         element: <AbandonedCarts />,
       }
     ]
+  },
+  {
+    path: '/dev/components',
+    element: <DevComponents />,
   }
 ]);
