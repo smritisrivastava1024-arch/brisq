@@ -6,18 +6,8 @@ import { LoginPage } from './pages/owner/LoginPage';
 import { OwnerLayout } from './pages/owner/OwnerLayout';
 import { CustomerChatPage } from './pages/CustomerChatPage';
 import { ApprovalsPage } from './pages/owner/ApprovalsPage';
-
-// ---------------------------------------------------------------------------
-// Placeholder pages for owner sub-routes
-// ---------------------------------------------------------------------------
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="p-10">
-      <h1 className="font-display font-semibold text-3xl text-ink-navy">{title}</h1>
-      <p className="mt-3 text-sm text-[#6B6455]">This page is under construction.</p>
-    </div>
-  );
-}
+import { OwnerChatPage } from './pages/owner/OwnerChatPage';
+import { AbandonedCartsPage } from './pages/owner/AbandonedCartsPage';
 
 // ---------------------------------------------------------------------------
 // Router
@@ -45,9 +35,9 @@ export const router = createBrowserRouter([
         children: [
           // Default redirect: /owner → /owner/approvals
           { index: true, element: <Navigate to="approvals" replace /> },
-          { path: 'approvals',      element: <ApprovalsPage /> },
-          { path: 'chat',           element: <PlaceholderPage title="Chat" /> },
-          { path: 'abandoned-carts', element: <PlaceholderPage title="Abandoned Carts" /> },
+          { path: 'approvals',       element: <ApprovalsPage /> },
+          { path: 'chat',            element: <OwnerChatPage /> },
+          { path: 'abandoned-carts', element: <AbandonedCartsPage /> },
         ],
       },
     ],
