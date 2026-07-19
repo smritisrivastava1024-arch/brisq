@@ -1,5 +1,6 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { DevComponents } from './components/DevComponents';
+import { DevApi } from './components/DevApi';
 
 function CustomerChat() {
   return (
@@ -61,5 +62,9 @@ export const router = createBrowserRouter([
   {
     path: '/dev/components',
     element: <DevComponents />,
+  },
+  {
+    path: '/dev/api',
+    element: <DevApi />,
   }
 ]);
