@@ -4,18 +4,7 @@ import { DevApi } from './components/DevApi';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/owner/LoginPage';
 import { OwnerLayout } from './pages/owner/OwnerLayout';
-
-// ---------------------------------------------------------------------------
-// Customer Chat (/) — placeholder, built in a later phase
-// ---------------------------------------------------------------------------
-function CustomerChat() {
-  return (
-    <div className="bg-ink-navy text-parchment font-display p-8 min-h-screen">
-      <h1>Customer Chat</h1>
-      <p className="font-body text-parchment-dim mt-4">Coming soon.</p>
-    </div>
-  );
-}
+import { CustomerChatPage } from './pages/CustomerChatPage';
 
 // ---------------------------------------------------------------------------
 // Placeholder pages for owner sub-routes
@@ -36,7 +25,7 @@ export const router = createBrowserRouter([
   // Customer-facing chat
   {
     path: '/',
-    element: <CustomerChat />,
+    element: <CustomerChatPage />,
   },
 
   // Owner login — public
